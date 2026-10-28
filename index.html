@@ -1,0 +1,1064 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Job Tracker">
+<meta name="theme-color" content="#185fa5">
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="icons/icon-180.png">
+<link rel="apple-touch-icon" sizes="152x152" href="icons/icon-152.png">
+<link rel="apple-touch-icon" sizes="120x120" href="icons/icon-120.png">
+<title>Job Tracker – Liviu</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.19.0/tabler-icons.min.css">
+<script src="https://cdn.jsdelivr.net/npm/mammoth@1.8.0/mammoth.browser.min.js"></script>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#fff;--bg2:#f5f5f4;--bg3:#fafaf9;
+  --text:#1a1a1a;--text2:#6b7280;--text3:#9ca3af;
+  --border:rgba(0,0,0,0.11);--border2:rgba(0,0,0,0.22);
+  --radius:8px;--radius-lg:12px;
+  --font:'Inter',system-ui,sans-serif;
+  --cl:#185fa5;--cl-bg:#e6f1fb;--cl-hover:#cde2f7;
+  --cv:#3b6d11;--cv-bg:#eaf3de;--cv-hover:#d2ecb4;
+  --app:#6d3eb5;--app-bg:#f0eafd;--app-hover:#e2d5fb;
+  --other:#8a5a00;--other-bg:#fdf3e0;
+}
+@media(prefers-color-scheme:dark){:root{
+  --bg:#1c1c1e;--bg2:#2c2c2e;--bg3:#111;
+  --text:#f2f2f7;--text2:#aeaeb2;--text3:#636366;
+  --border:rgba(255,255,255,0.10);--border2:rgba(255,255,255,0.20);
+}}
+body{font-family:var(--font);background:var(--bg3);color:var(--text);min-height:100vh}
+.app{max-width:960px;margin:0 auto;padding:2rem 1.5rem}
+.top-bar{display:flex;align-items:center;justify-content:space-between;margin-bottom:1.5rem;flex-wrap:wrap;gap:12px}
+h1{font-size:20px;font-weight:500;display:flex;align-items:center;gap:8px}
+.stats-row{display:grid;grid-template-columns:repeat(auto-fit,minmax(110px,1fr));gap:10px;margin-bottom:1.5rem}
+.stat-card{background:var(--bg2);border-radius:var(--radius);padding:.85rem 1rem}
+.stat-card .label{font-size:11px;color:var(--text2);margin-bottom:3px}
+.stat-card .value{font-size:20px;font-weight:500}
+/* tabs */
+.tabs{display:flex;border-bottom:0.5px solid var(--border);margin-bottom:1.5rem;overflow-x:auto}
+.tab{padding:9px 18px;font-size:13px;background:none;border:none;cursor:pointer;color:var(--text2);border-bottom:2px solid transparent;margin-bottom:-1px;font-family:var(--font);white-space:nowrap;display:flex;align-items:center;gap:6px}
+.tab.active{color:var(--text);border-bottom-color:var(--text);font-weight:500}
+.tab:hover:not(.active){color:var(--text)}
+.section{display:none}.section.active{display:block}
+/* buttons */
+.btn{display:inline-flex;align-items:center;gap:5px;padding:6px 12px;font-size:13px;border:0.5px solid var(--border2);border-radius:var(--radius);background:none;cursor:pointer;color:var(--text);font-family:var(--font)}
+.btn:hover{background:var(--bg2)}
+.btn.primary{background:var(--text);color:var(--bg);border-color:var(--text)}
+.btn.primary:hover{opacity:.84}
+.btn.danger{color:#a32d2d;border-color:#f7c1c1}
+.btn.danger:hover{background:#fcebeb}
+.btn-cl{background:var(--cl-bg);color:var(--cl);border-color:var(--cl-bg);font-weight:500}
+.btn-cl:hover{background:var(--cl-hover)}
+.btn-cv{background:var(--cv-bg);color:var(--cv);border-color:var(--cv-bg);font-weight:500}
+.btn-cv:hover{background:var(--cv-hover)}
+.btn-app{background:var(--app-bg);color:var(--app);border-color:var(--app-bg);font-weight:500}
+.btn-app:hover{background:var(--app-hover)}
+.btn-other{background:var(--other-bg);color:var(--other);border-color:var(--other-bg);font-weight:500}
+.btn-other:hover{opacity:.85}
+/* cards */
+.card{background:var(--bg);border:0.5px solid var(--border);border-radius:var(--radius-lg);padding:1rem 1.25rem;margin-bottom:10px}
+.card:hover{border-color:var(--border2)}
+.job-title{font-size:15px;font-weight:500;margin-bottom:2px}
+.job-org{font-size:13px;color:var(--text2)}
+.job-meta{display:flex;gap:12px;margin-top:8px;flex-wrap:wrap}
+.job-meta span,.job-meta a{font-size:12px;color:var(--text2);display:flex;align-items:center;gap:4px;text-decoration:none}
+.job-meta a:hover{color:var(--text)}
+/* doc chips on job card */
+.job-docs-section{margin-top:10px;padding-top:10px;border-top:0.5px solid var(--border)}
+.job-docs-type-row{margin-bottom:8px}
+.job-docs-type-label{font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.4px;margin-bottom:5px;display:flex;align-items:center;gap:5px}
+.doc-chips{display:flex;flex-wrap:wrap;gap:6px}
+.doc-chip{display:inline-flex;align-items:center;gap:6px;padding:5px 9px;border-radius:var(--radius);border:0.5px solid var(--border);background:var(--bg2);font-size:12px;cursor:pointer;max-width:240px}
+.doc-chip:hover{border-color:var(--border2)}
+.doc-chip .ci{width:20px;height:20px;border-radius:4px;display:flex;align-items:center;justify-content:center;font-size:11px;flex-shrink:0}
+.ci-cl{background:var(--cl-bg);color:var(--cl)}
+.ci-cv{background:var(--cv-bg);color:var(--cv)}
+.ci-app{background:var(--app-bg);color:var(--app)}
+.ci-other{background:var(--other-bg);color:var(--other)}
+.doc-chip .chip-name{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1}
+.doc-add-row{display:flex;gap:6px;flex-wrap:wrap;margin-top:6px}
+.job-actions{display:flex;gap:6px;margin-top:10px;padding-top:10px;border-top:0.5px solid var(--border);flex-wrap:wrap}
+/* badges */
+.badge{display:inline-block;font-size:11px;padding:3px 9px;border-radius:20px;font-weight:500}
+.badge-applied{background:#e6f1fb;color:#185fa5}
+.badge-interview{background:#faeeda;color:#854f0b}
+.badge-offer{background:#eaf3de;color:#3b6d11}
+.badge-rejected{background:#fcebeb;color:#a32d2d}
+.badge-wishlist{background:#f1efe8;color:#5f5e5a}
+.badge-test{background:#eeedfe;color:#534ab7}
+/* filter */
+.filter-bar{display:flex;gap:7px;margin-bottom:1.2rem;flex-wrap:wrap}
+.filter-chip{padding:5px 11px;font-size:12px;border:0.5px solid var(--border);border-radius:20px;background:none;cursor:pointer;color:var(--text2);font-family:var(--font)}
+.filter-chip.active{background:var(--text);color:var(--bg);border-color:var(--text)}
+.sort-bar{display:flex;align-items:center;gap:8px;margin-bottom:1rem;flex-wrap:wrap}
+.sort-bar label{font-size:12px;color:var(--text2)}
+.sort-bar select{font-size:12px;padding:5px 8px;width:auto;border:0.5px solid var(--border2);border-radius:var(--radius);background:var(--bg);color:var(--text);font-family:var(--font)}
+/* lib */
+.lib-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:1.25rem;flex-wrap:wrap;gap:10px}
+.lib-title{font-size:17px;font-weight:500;display:flex;align-items:center;gap:8px}
+.lib-controls{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.lib-controls select{font-size:13px;padding:6px 10px;border:0.5px solid var(--border2);border-radius:var(--radius);background:var(--bg);color:var(--text);font-family:var(--font)}
+.topic-group{margin-bottom:1.75rem}
+.topic-group-title{font-size:13px;font-weight:600;padding-bottom:8px;border-bottom:0.5px solid var(--border);margin-bottom:.75rem;display:flex;align-items:center;gap:6px}
+.topic-group-title .count{font-weight:400;color:var(--text3);font-size:12px}
+.lib-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:12px}
+.lib-card{background:var(--bg);border:0.5px solid var(--border);border-radius:var(--radius-lg);padding:1rem 1.1rem;display:flex;flex-direction:column;gap:9px}
+.lib-card:hover{border-color:var(--border2)}
+.lib-card-header{display:flex;align-items:flex-start;gap:9px}
+.lib-card-icon{width:34px;height:34px;border-radius:var(--radius);display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0}
+.lib-card-icon.cl{background:var(--cl-bg);color:var(--cl)}
+.lib-card-icon.cv{background:var(--cv-bg);color:var(--cv)}
+.lib-card-icon.app{background:var(--app-bg);color:var(--app)}
+.lib-card-icon.other{background:var(--other-bg);color:var(--other)}
+.lib-card-name{font-size:13px;font-weight:500;line-height:1.35;margin-bottom:1px}
+.lib-card-sub{font-size:11px;color:var(--text2)}
+.lib-card-desc{font-size:12px;color:var(--text2);line-height:1.55}
+.lib-card-tags{display:flex;flex-wrap:wrap;gap:4px}
+.lib-card-linked{font-size:11px;color:var(--text3);display:flex;align-items:center;gap:4px}
+.lib-card-footer{display:flex;gap:5px;padding-top:8px;border-top:0.5px solid var(--border);flex-wrap:wrap}
+/* tags */
+.tag{display:inline-flex;align-items:center;font-size:11px;padding:2px 7px;border-radius:10px;font-weight:500;white-space:nowrap}
+.tag-0{background:#e6f1fb;color:#185fa5}.tag-1{background:#eeedfe;color:#534ab7}
+.tag-2{background:#faeeda;color:#854f0b}.tag-3{background:#eaf3de;color:#3b6d11}
+.tag-4{background:#f3f0fe;color:#6d4c9e}.tag-5{background:#fce8fb;color:#8b2580}
+.tag-6{background:#e0f5f0;color:#1a6650}.tag-7{background:#fdf3e0;color:#8a5a00}
+.tag-8{background:#f1efe8;color:#5f5e5a}.tag-9{background:#fcebeb;color:#a32d2d}
+/* modal */
+.modal-bg{position:fixed;inset:0;background:rgba(0,0,0,.44);display:flex;align-items:flex-start;justify-content:center;z-index:200;padding:1.5rem 1rem;overflow-y:auto}
+.modal{background:var(--bg);border-radius:var(--radius-lg);border:0.5px solid var(--border);width:100%;max-width:600px;padding:1.5rem}
+.modal.xl{max-width:800px}
+.modal h2{font-size:16px;font-weight:500;margin-bottom:1.2rem;display:flex;align-items:center;gap:8px}
+.field{margin-bottom:13px}
+.field label{display:block;font-size:12px;color:var(--text2);margin-bottom:5px;font-weight:500}
+.field input,.field select,.field textarea{width:100%;padding:8px 10px;font-size:13px;border:0.5px solid var(--border2);border-radius:var(--radius);background:var(--bg);color:var(--text);font-family:var(--font);outline:none}
+.field input:focus,.field select:focus,.field textarea:focus{border-color:var(--text)}
+.field textarea{resize:vertical;min-height:100px}
+.field-row{display:grid;grid-template-columns:1fr 1fr;gap:11px}
+.modal-actions{display:flex;gap:8px;justify-content:flex-end;margin-top:1.2rem;padding-top:1rem;border-top:0.5px solid var(--border)}
+/* doc block inside modal */
+.doc-block{border:0.5px solid var(--border);border-radius:var(--radius-lg);padding:1rem;margin-bottom:10px;background:var(--bg2)}
+.doc-block-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px}
+.doc-block-title{font-size:13px;font-weight:600;display:flex;align-items:center;gap:6px}
+.doc-block-fields{display:flex;flex-direction:column;gap:10px}
+.doc-block.collapsed .doc-block-fields{display:none}
+.doc-block-toggle{background:none;border:none;cursor:pointer;color:var(--text3);font-size:13px;display:flex;align-items:center;gap:4px;font-family:var(--font);padding:0}
+.doc-block-toggle:hover{color:var(--text)}
+/* drop zone */
+.drop-zone{border:1.5px dashed var(--border2);border-radius:var(--radius);padding:.9rem;text-align:center;cursor:pointer;background:var(--bg);position:relative;transition:all .12s}
+.drop-zone:hover,.drop-zone.drag-over{border-color:var(--text)}
+.drop-zone input[type=file]{position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;height:100%}
+.dz-row{display:flex;align-items:center;gap:8px;justify-content:center}
+.dz-icon{font-size:18px;color:var(--text2)}
+.dz-label{font-size:12px;color:var(--text2)}
+.dz-sub{font-size:11px;color:var(--text3)}
+.upload-status{font-size:11px;padding:4px 8px;border-radius:var(--radius);margin-top:5px;display:none}
+.upload-status.ok{background:#eaf3de;color:#3b6d11;display:block}
+.upload-status.err{background:#fcebeb;color:#a32d2d;display:block}
+.upload-status.loading{background:var(--bg2);color:var(--text2);display:block}
+/* topic input */
+.topic-wrap{position:relative}
+.topic-sug{position:absolute;top:calc(100% + 2px);left:0;right:0;background:var(--bg);border:0.5px solid var(--border2);border-radius:var(--radius);z-index:300;max-height:160px;overflow-y:auto;display:none;box-shadow:0 4px 16px rgba(0,0,0,.08)}
+.topic-sug.open{display:block}
+.topic-sug-item{padding:7px 12px;font-size:13px;cursor:pointer}
+.topic-sug-item:hover{background:var(--bg2)}
+.topic-chips{display:flex;flex-wrap:wrap;gap:5px;margin-top:6px}
+.topic-chip-wrap{display:inline-flex;align-items:center;gap:3px;font-size:12px;padding:2px 4px 2px 7px;border-radius:20px;border:0.5px solid var(--border)}
+.topic-chip-wrap button{background:none;border:none;cursor:pointer;color:var(--text3);display:flex;align-items:center;padding:1px;border-radius:50%}
+.topic-chip-wrap button:hover{color:var(--text)}
+/* cv picker */
+.cv-pick-list{display:flex;flex-direction:column;gap:6px;max-height:240px;overflow-y:auto;margin-top:4px}
+.cv-pick-item{display:flex;align-items:center;gap:10px;padding:8px 11px;border:0.5px solid var(--border);border-radius:var(--radius);cursor:pointer}
+.cv-pick-item:hover{border-color:var(--border2);background:var(--bg2)}
+.cv-pick-item.sel{border-color:var(--cv);background:var(--cv-bg)}
+/* empty */
+.empty-state{text-align:center;padding:3rem 1rem;color:var(--text2)}
+.empty-state .icon{font-size:36px;margin-bottom:10px;color:var(--border2)}
+.empty-state p{font-size:13px;line-height:1.7}
+/* section divider */
+.modal-divider{font-size:12px;font-weight:600;text-transform:uppercase;letter-spacing:.4px;color:var(--text2);margin:1.25rem 0 .75rem;padding-top:1rem;border-top:0.5px solid var(--border);display:flex;align-items:center;gap:7px}
+
+/* ── iOS / PWA ── */
+:root {
+  --sat: env(safe-area-inset-top);
+  --sar: env(safe-area-inset-right);
+  --sab: env(safe-area-inset-bottom);
+  --sal: env(safe-area-inset-left);
+}
+html { height: -webkit-fill-available; }
+body {
+  min-height: -webkit-fill-available;
+  -webkit-text-size-adjust: 100%;
+  -webkit-tap-highlight-color: transparent;
+  overscroll-behavior-y: none;
+}
+
+/* ── Mobile: sticky header replaces .top-bar ── */
+.pwa-header {
+  display: none;
+  position: sticky;
+  top: 0; left: 0; right: 0;
+  z-index: 50;
+  background: var(--bg3);
+  border-bottom: 0.5px solid var(--border);
+  padding: calc(var(--sat) + .6rem) calc(var(--sar) + 1rem) .6rem calc(var(--sal) + 1rem);
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+/* ── Mobile: bottom tab bar ── */
+.bottom-tabs {
+  display: none;
+  position: fixed;
+  bottom: 0; left: 0; right: 0;
+  padding-bottom: var(--sab);
+  background: var(--bg);
+  border-top: 0.5px solid var(--border);
+  z-index: 100;
+}
+.bottom-tab {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 7px 2px 5px;
+  font-size: 9px;
+  color: var(--text2);
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-family: var(--font);
+  gap: 2px;
+  -webkit-tap-highlight-color: transparent;
+  letter-spacing: .2px;
+}
+.bottom-tab i { font-size: 21px; }
+.bottom-tab.active { color: var(--cl); }
+.bottom-tab.active i { }
+
+/* ── Mobile layout ── */
+@media (max-width: 640px) {
+  .pwa-header { display: flex; }
+  .bottom-tabs { display: flex; }
+  .top-bar { display: none; }
+  .tabs { display: none; }
+  .app { padding: 0; max-width: 100%; }
+  .scroll-area {
+    padding: .75rem calc(var(--sar) + .9rem) calc(var(--sab) + 72px) calc(var(--sal) + .9rem);
+  }
+  /* Sheet-style modals */
+  .modal-bg {
+    align-items: flex-end;
+    padding: 0;
+  }
+  .modal {
+    border-radius: 20px 20px 0 0;
+    max-width: 100%;
+    max-height: 92dvh;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+  .modal.xl { max-width: 100%; }
+  /* Larger tap targets */
+  .btn { min-height: 38px; }
+  .filter-chip { min-height: 34px; }
+  .bottom-tab { min-width: 44px; min-height: 44px; }
+  /* lib grid single column on small screens */
+  .lib-grid { grid-template-columns: 1fr; }
+}
+
+@media (min-width: 641px) {
+  .pwa-header { display: none !important; }
+  .bottom-tabs { display: none !important; }
+  .scroll-area { padding: 2rem 1.5rem; }
+}
+
+</style>
+</head>
+<body>
+
+  <!-- PWA sticky header (mobile) -->
+  <div class="pwa-header" id="pwa-header">
+    <h1 style="font-size:17px;font-weight:600"><i class="ti ti-briefcase"></i> Job Tracker</h1>
+    <div style="display:flex;gap:6px">
+      <button class="btn primary" onclick="openJobModal(null)" style="font-size:12px;padding:5px 11px"><i class="ti ti-plus"></i> New</button>
+      <button class="btn" onclick="exportData()" style="font-size:12px;padding:5px 9px"><i class="ti ti-download"></i></button>
+      <label class="btn" style="font-size:12px;padding:5px 9px;cursor:pointer"><i class="ti ti-upload"></i><input type="file" accept=".json" onchange="importData(event)" style="display:none"></label>
+    </div>
+  </div>
+
+  <!-- Bottom tab bar (mobile) -->
+  <div class="bottom-tabs" id="bottom-tabs">
+    <button class="bottom-tab active" id="btab-pipeline" onclick="switchTabAll('pipeline',this)">
+      <i class="ti ti-layout-list"></i>Pipeline
+    </button>
+    <button class="bottom-tab" id="btab-cl" onclick="switchTabAll('cl',this)">
+      <i class="ti ti-file-text"></i>Cover letters
+    </button>
+    <button class="bottom-tab" id="btab-cv" onclick="switchTabAll('cv',this)">
+      <i class="ti ti-id"></i>CVs
+    </button>
+    <button class="bottom-tab" id="btab-appforms" onclick="switchTabAll('appforms',this)">
+      <i class="ti ti-forms"></i>Forms
+    </button>
+    <button class="bottom-tab" id="btab-other" onclick="switchTabAll('other',this)">
+      <i class="ti ti-files"></i>Other
+    </button>
+  </div>
+<div class="app">
+
+<div class="scroll-area">
+<div class="top-bar">
+  <h1><i class="ti ti-briefcase"></i> Job tracker</h1>
+  <div style="display:flex;gap:8px;flex-wrap:wrap">
+    <button class="btn primary" onclick="openJobModal(null)"><i class="ti ti-plus"></i> New application</button>
+    <button class="btn" onclick="exportData()"><i class="ti ti-download"></i> Export</button>
+    <label class="btn" style="cursor:pointer"><i class="ti ti-upload"></i> Import<input type="file" accept=".json" onchange="importData(event)" style="display:none"></label>
+  </div>
+</div>
+
+<div class="stats-row" id="stats-row"></div>
+
+<div class="tabs">
+  <button class="tab active" onclick="switchTab('pipeline',this)" data-tab="pipeline"><i class="ti ti-layout-list"></i> Pipeline</button>
+  <button class="tab" onclick="switchTab('cl',this)" data-tab="cl"><i class="ti ti-file-text"></i> Cover letters</button>
+  <button class="tab" onclick="switchTab('cv',this)" data-tab="cv"><i class="ti ti-id"></i> CVs</button>
+  <button class="tab" onclick="switchTab('appforms',this)" data-tab="appforms"><i class="ti ti-forms"></i> App forms</button>
+  <button class="tab" onclick="switchTab('other',this)" data-tab="other"><i class="ti ti-files"></i> Other docs</button>
+</div>
+
+<div id="tab-pipeline" class="section active">
+  <div class="filter-bar">
+    <button class="filter-chip active" onclick="setFilter('all',this)">All</button>
+    <button class="filter-chip" onclick="setFilter('Wishlist',this)">Wishlist</button>
+    <button class="filter-chip" onclick="setFilter('Applied',this)">Applied</button>
+    <button class="filter-chip" onclick="setFilter('Test/Assessment',this)">Test / Assessment</button>
+    <button class="filter-chip" onclick="setFilter('Interview',this)">Interview</button>
+    <button class="filter-chip" onclick="setFilter('Offer',this)">Offer</button>
+    <button class="filter-chip" onclick="setFilter('Rejected',this)">Rejected</button>
+  </div>
+  <div class="sort-bar">
+    <label>Sort by</label>
+    <select id="sort-select" onchange="renderPipeline()">
+      <option value="date-desc">Newest first</option>
+      <option value="date-asc">Oldest first</option>
+      <option value="alpha">Company A–Z</option>
+      <option value="status">Status</option>
+    </select>
+  </div>
+  <div id="pipeline-list"></div>
+</div>
+
+<div id="tab-cl" class="section">
+  <div class="lib-header">
+    <div class="lib-title" style="color:var(--cl)"><i class="ti ti-file-text"></i> Cover letters</div>
+    <div class="lib-controls">
+      <select id="cl-filter" onchange="renderLibTab('CL')"><option value="">All topics</option></select>
+      <button class="btn btn-cl" onclick="openDocModal('CL',null,null)"><i class="ti ti-plus"></i> New</button>
+    </div>
+  </div>
+  <div id="cl-content"></div>
+</div>
+
+<div id="tab-cv" class="section">
+  <div class="lib-header">
+    <div class="lib-title" style="color:var(--cv)"><i class="ti ti-id"></i> CVs</div>
+    <div class="lib-controls">
+      <select id="cv-filter" onchange="renderLibTab('CV')"><option value="">All profiles / specialisations</option></select>
+      <button class="btn btn-cv" onclick="openDocModal('CV',null,null)"><i class="ti ti-plus"></i> New</button>
+    </div>
+  </div>
+  <div id="cv-content"></div>
+</div>
+
+<div id="tab-appforms" class="section">
+  <div class="lib-header">
+    <div class="lib-title" style="color:var(--app)"><i class="ti ti-forms"></i> Application forms</div>
+    <button class="btn btn-app" onclick="openDocModal('APP',null,null)"><i class="ti ti-plus"></i> New</button>
+  </div>
+  <div id="appforms-content"></div>
+</div>
+
+<div id="tab-other" class="section">
+  <div class="lib-header">
+    <div class="lib-title" style="color:var(--other)"><i class="ti ti-files"></i> Other documents</div>
+    <button class="btn btn-other" onclick="openDocModal('OTHER',null,null)"><i class="ti ti-plus"></i> Add document</button>
+  </div>
+  <div id="other-content"></div>
+</div>
+
+</div>
+</div><!-- /scroll-area -->
+<div id="modal-overlay" style="display:none"></div>
+
+<script>
+// ── STATE ──
+const SK='jt_v6';
+let state={jobs:[],docs:[]};
+let currentFilter='all';
+let editingId=null;
+// per-docblock topic state: keyed by block id
+let blockTopics={};
+
+// ── TOPIC PRESETS ──
+const TP={
+  CL:['Policy','Stakeholder engagement','Project management','Procurement',
+      'Evaluation & monitoring','Communications','Data & knowledge management',
+      'Finance & budget','Research & innovation','Maritime governance',
+      'Energy & climate','Digital transformation','EU funding & grants','General'],
+  CV:['EU Consultant','Programme Manager','Policy Analyst',
+      'Project Manager (PRINCE2)','Data & Knowledge Mgmt (CDMP)',
+      'EU Official / Institution','Senior Manager','Maritime & Blue Economy',
+      'Energy & Climate','Digital & Data'],
+  APP:['European Commission','EU Agency','European Parliament',
+       'Council of the EU','OECD / International org','Private sector','NGO / Think tank'],
+  OTHER:[]
+};
+
+function tcls(t){let h=0;for(let i=0;i<t.length;i++)h=(h*31+t.charCodeAt(i))&0xffff;return 'tag-'+(h%10);}
+function tbadge(t){return `<span class="tag ${tcls(t)}">${esc(t)}</span>`;}
+function tbadges(arr){return(arr||[]).map(tbadge).join('');}
+
+// ── PERSIST ──
+function load(){
+  try{const s=localStorage.getItem(SK);if(s){const p=JSON.parse(s);state.jobs=p.jobs||[];state.docs=p.docs||[];}}catch(e){}
+  state.docs=state.docs.map(d=>({topics:[],description:'',...d,type:['CL','CV','APP','OTHER'].includes(d.type)?d.type:'CL'}));
+  refreshTopicFilters();render();
+}
+function save(){try{localStorage.setItem(SK,JSON.stringify(state));}catch(e){}}
+function uid(){return 'x'+Math.random().toString(36).slice(2,9)}
+function exportData(){const b=new Blob([JSON.stringify(state,null,2)],{type:'application/json'});const a=document.createElement('a');a.href=URL.createObjectURL(b);a.download='job-tracker.json';a.click();}
+function importData(e){
+  const f=e.target.files[0];if(!f)return;
+  const r=new FileReader();r.onload=ev=>{
+    try{const p=JSON.parse(ev.target.result);state.jobs=p.jobs||[];state.docs=p.docs||[];
+      state.docs=state.docs.map(d=>({topics:[],description:'',...d}));
+      save();refreshTopicFilters();render();alert('Import OK!');}catch{alert('Invalid file.');}
+  };r.readAsText(f);
+}
+
+function refreshTopicFilters(){
+  ['CL','CV'].forEach(type=>{
+    const sel=document.getElementById(type.toLowerCase()+'-filter');if(!sel)return;
+    const prev=sel.value;
+    sel.innerHTML=`<option value="">All ${type==='CL'?'topics':'profiles / specialisations'}</option>`;
+    const used=new Set();
+    state.docs.filter(d=>d.type===type).forEach(d=>(d.topics||[]).forEach(t=>used.add(t)));
+    [...used].sort().forEach(t=>{const o=document.createElement('option');o.value=t;o.textContent=t;sel.appendChild(o);});
+    sel.value=prev;
+  });
+}
+
+// ── HELPERS ──
+function esc(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
+function fmtDate(d){if(!d)return '';return new Date(d+'T00:00:00').toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'});}
+function sbadge(s){const m={Applied:'applied',Interview:'interview',Offer:'offer',Rejected:'rejected',Wishlist:'wishlist','Test/Assessment':'test'};return `<span class="badge badge-${m[s]||'wishlist'}">${s}</span>`;}
+function ticon(t){return{CL:'file-text',CV:'id',APP:'forms',OTHER:'files'}[t]||'file';}
+function tlabel(t){return{CL:'Cover letter',CV:'CV',APP:'App form',OTHER:'Document'}[t]||t;}
+function tcolor(t){return{CL:'var(--cl)',CV:'var(--cv)',APP:'var(--app)',OTHER:'var(--other)'}[t]||'var(--text)';}
+function tcibg(t){return{CL:'ci-cl',CV:'ci-cv',APP:'ci-app',OTHER:'ci-other'}[t]||'ci-other';}
+
+// ── RENDER ──
+function render(){renderStats();renderPipeline();['CL','CV','APP','OTHER'].forEach(renderLibTab);}
+
+function renderStats(){
+  const t=state.jobs.length,act=state.jobs.filter(j=>j.status!=='Rejected').length,
+    iv=state.jobs.filter(j=>j.status==='Interview').length,of=state.jobs.filter(j=>j.status==='Offer').length;
+  document.getElementById('stats-row').innerHTML=`
+    <div class="stat-card"><div class="label">Applications</div><div class="value">${t}</div></div>
+    <div class="stat-card"><div class="label">Active</div><div class="value">${act}</div></div>
+    <div class="stat-card"><div class="label">Interviews</div><div class="value">${iv}</div></div>
+    <div class="stat-card"><div class="label">Offers</div><div class="value">${of}</div></div>
+    <div class="stat-card"><div class="label">Cover letters</div><div class="value">${state.docs.filter(d=>d.type==='CL').length}</div></div>
+    <div class="stat-card"><div class="label">CVs</div><div class="value">${state.docs.filter(d=>d.type==='CV').length}</div></div>
+    <div class="stat-card"><div class="label">App forms</div><div class="value">${state.docs.filter(d=>d.type==='APP').length}</div></div>`;
+}
+
+function setFilter(f,el){currentFilter=f;document.querySelectorAll('.filter-chip').forEach(c=>c.classList.remove('active'));el.classList.add('active');renderPipeline();}
+
+function renderPipeline(){
+  const sort=document.getElementById('sort-select')?.value||'date-desc';
+  let jobs=[...state.jobs];
+  if(currentFilter!=='all')jobs=jobs.filter(j=>j.status===currentFilter);
+  if(sort==='date-desc')jobs.sort((a,b)=>b.date.localeCompare(a.date));
+  else if(sort==='date-asc')jobs.sort((a,b)=>a.date.localeCompare(b.date));
+  else if(sort==='alpha')jobs.sort((a,b)=>a.org.localeCompare(b.org));
+  else jobs.sort((a,b)=>{const o=['Offer','Interview','Test/Assessment','Applied','Wishlist','Rejected'];return o.indexOf(a.status)-o.indexOf(b.status);});
+  const el=document.getElementById('pipeline-list');
+  if(!jobs.length){el.innerHTML=`<div class="empty-state"><div class="icon"><i class="ti ti-briefcase-off"></i></div><p>No applications yet.<br>Click "New application" to start.</p></div>`;return;}
+  el.innerHTML=jobs.map(jobCard).join('');
+}
+
+function jobCard(j){
+  const linked=state.docs.filter(d=>d.linkedJob===j.id);
+  const types=['CL','CV','APP','OTHER'];
+  const typeNames={CL:'Cover letters',CV:'CVs',APP:'App forms',OTHER:'Other docs'};
+  let docSections='';
+  types.forEach(type=>{
+    const docs=linked.filter(d=>d.type===type);
+    if(!docs.length)return;
+    const chips=docs.map(d=>`<div class="doc-chip" onclick="viewDoc('${d.id}')">
+      <div class="ci ${tcibg(type)}"><i class="ti ti-${ticon(type)}"></i></div>
+      <span class="chip-name">${esc(d.name)}</span>
+      <button class="btn" style="padding:1px 4px;border:none;background:none;color:var(--text3);flex-shrink:0" onclick="event.stopPropagation();openDocModal('${type}',null,state.docs.find(x=>x.id==='${d.id}'))" title="Edit"><i class="ti ti-edit" style="font-size:11px"></i></button>
+    </div>`).join('');
+    docSections+=`<div class="job-docs-type-row"><div class="job-docs-type-label" style="color:${tcolor(type)}"><i class="ti ti-${ticon(type)}"></i>${typeNames[type]}</div><div class="doc-chips">${chips}</div></div>`;
+  });
+
+  const deadline=j.deadline?`<span><i class="ti ti-calendar-due"></i>Deadline ${fmtDate(j.deadline)}</span>`:'';
+  const followUp=j.followUp
+    ?`<div style="display:flex;align-items:flex-start;gap:8px;margin-top:8px;padding:7px 11px;background:#fdf3e0;border-radius:var(--radius);border:0.5px solid #f0d9a0">
+        <i class="ti ti-bell" style="color:#8a5a00;flex-shrink:0;margin-top:1px"></i>
+        <div style="flex:1;min-width:0;font-size:12px;color:#6b4400">
+          <span style="font-weight:600">Follow-up</span>${j.followUpDate?' · <b>'+fmtDate(j.followUpDate)+'</b>':''}${j.followUpContact?' · '+esc(j.followUpContact):''}
+          ${j.followUpNote?`<div style="margin-top:2px;color:#8a5a00">${esc(j.followUpNote)}</div>`:''}
+        </div>
+        <button class="btn" style="padding:2px 8px;font-size:11px;border-color:#f0d9a0;color:#8a5a00;flex-shrink:0" onclick="openFollowUpModal('${j.id}')"><i class="ti ti-edit"></i></button>
+      </div>`
+    :`<div style="margin-top:8px">
+        <button class="btn" style="font-size:12px;color:var(--text3);border-style:dashed;padding:4px 10px" onclick="openFollowUpModal('${j.id}')"><i class="ti ti-bell-plus"></i> Add follow-up reminder</button>
+      </div>`;
+  return `<div class="card">
+    <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:10px">
+      <div><div class="job-title">${esc(j.title)}</div><div class="job-org">${esc(j.org)}${j.location?' · '+esc(j.location):''}</div></div>
+      ${sbadge(j.status)}
+    </div>
+    <div class="job-meta">
+      <span><i class="ti ti-calendar"></i>${fmtDate(j.date)}</span>
+      ${deadline}
+      ${j.url?`<a href="${esc(j.url)}" target="_blank"><i class="ti ti-external-link"></i>Job post</a>`:''}
+    </div>
+    ${j.notes?`<div style="font-size:12px;color:var(--text2);margin-top:8px;padding:7px 10px;background:var(--bg2);border-radius:var(--radius);line-height:1.55">${esc(j.notes)}</div>`:''}
+    ${followUp}
+    <div class="job-docs-section">
+      ${docSections||'<div style="font-size:12px;color:var(--text3);margin-bottom:6px">No documents linked yet</div>'}
+      <div class="doc-add-row">
+        <button class="btn btn-cl" onclick="openDocModal('CL','${j.id}',null)"><i class="ti ti-plus"></i> Cover letter</button>
+        <button class="btn btn-cv" onclick="openCvPicker('${j.id}')"><i class="ti ti-plus"></i> CV</button>
+        <button class="btn btn-app" onclick="openDocModal('APP','${j.id}',null)"><i class="ti ti-plus"></i> App form</button>
+        <button class="btn btn-other" onclick="openDocModal('OTHER','${j.id}',null)"><i class="ti ti-plus"></i> Other</button>
+      </div>
+    </div>
+    <div class="job-actions">
+      <button class="btn" onclick="openJobModal(state.jobs.find(x=>x.id==='${j.id}'))"><i class="ti ti-edit"></i> Edit</button>
+      <button class="btn" onclick="openStatusModal('${j.id}')"><i class="ti ti-refresh"></i> Status</button>
+      <button class="btn" style="background:#fcebeb;color:#a32d2d;border-color:#f7c1c1;font-weight:500" onclick="if(confirm('Delete this application and all linked documents?'))deleteJob('${j.id}')"><i class="ti ti-trash"></i> Delete</button>
+    </div>
+  </div>`;
+}
+
+function renderLibTab(type){
+  const ids={CL:'cl-content',CV:'cv-content',APP:'appforms-content',OTHER:'other-content'};
+  const el=document.getElementById(ids[type]);if(!el)return;
+  const fid={CL:'cl-filter',CV:'cv-filter'}[type];
+  const tf=fid?document.getElementById(fid)?.value:'';
+  let docs=state.docs.filter(d=>d.type===type);
+  if(tf)docs=docs.filter(d=>(d.topics||[]).includes(tf));
+  const labels={CL:'cover letters',CV:'CVs',APP:'application forms',OTHER:'other documents'};
+  if(!docs.length){el.innerHTML=`<div class="empty-state"><div class="icon"><i class="ti ti-${ticon(type)}"></i></div><p>No ${labels[type]} yet.</p></div>`;return;}
+  if(type==='APP'||type==='OTHER'){el.innerHTML=`<div class="lib-grid">${docs.map(libCard).join('')}</div>`;return;}
+  // group by topic
+  const grouped={};const noTopic=[];
+  docs.forEach(d=>{if(!(d.topics&&d.topics.length)){noTopic.push(d);return;}d.topics.forEach(t=>{if(!grouped[t])grouped[t]=[];grouped[t].push(d);});});
+  let html='';
+  Object.keys(grouped).sort().forEach(t=>{
+    const uniq=[...new Map(grouped[t].map(d=>[d.id,d])).values()];
+    html+=`<div class="topic-group"><div class="topic-group-title">${tbadge(t)}<span class="count">${uniq.length} doc${uniq.length>1?'s':''}</span></div><div class="lib-grid">${uniq.map(libCard).join('')}</div></div>`;
+  });
+  if(noTopic.length)html+=`<div class="topic-group"><div class="topic-group-title" style="color:var(--text3)"><i class="ti ti-tag-off"></i> No ${type==='CV'?'profile':'topic'} assigned</div><div class="lib-grid">${noTopic.map(libCard).join('')}</div></div>`;
+  el.innerHTML=html;
+}
+
+function libCard(d){
+  const job=state.jobs.find(j=>j.id===d.linkedJob);
+  const profileLabel=d.type==='CV'?'Profile / specialisation':'Topics';
+  return `<div class="lib-card">
+    <div class="lib-card-header">
+      <div class="lib-card-icon ${d.type.toLowerCase()}"><i class="ti ti-${ticon(d.type)}"></i></div>
+      <div style="flex:1;min-width:0"><div class="lib-card-name">${esc(d.name)}</div><div class="lib-card-sub">${fmtDate(d.date)}</div></div>
+    </div>
+    ${(d.topics||[]).length?`<div style="font-size:10px;color:var(--text3);margin-bottom:2px;text-transform:uppercase;letter-spacing:.3px;font-weight:600">${profileLabel}</div><div class="lib-card-tags">${tbadges(d.topics)}</div>`:''}
+    ${d.description?`<div class="lib-card-desc">${esc(d.description)}</div>`:''}
+    ${job?`<div class="lib-card-linked"><i class="ti ti-link"></i>${esc(job.org)}</div>`:''}
+    <div class="lib-card-footer">
+      <button class="btn" onclick="viewDoc('${d.id}')"><i class="ti ti-eye"></i> View</button>
+      <button class="btn" onclick="openDocModal('${d.type}',null,state.docs.find(x=>x.id==='${d.id}'))"><i class="ti ti-edit"></i> Edit</button>
+      <button class="btn" onclick="copyDoc('${d.id}')"><i class="ti ti-copy"></i> Copy</button>
+      <button class="btn danger" onclick="deleteDoc('${d.id}')"><i class="ti ti-trash"></i> Delete</button>
+    </div>
+  </div>`;
+}
+
+function switchTab(t,el){
+  document.querySelectorAll('.tab').forEach(b=>b.classList.remove('active'));
+  document.querySelectorAll('.section').forEach(s=>s.classList.remove('active'));
+  el.classList.add('active');document.getElementById('tab-'+t).classList.add('active');
+}
+
+// ── JOB MODAL (with integrated doc upload) ──
+function openJobModal(data){
+  const j=data||{title:'',org:'',location:'',status:'Applied',date:new Date().toISOString().slice(0,10),deadline:'',url:'',notes:''};
+  editingId=data?data.id:null;
+  blockTopics={};
+  // linked docs for existing job
+  const linked=editingId?state.docs.filter(d=>d.linkedJob===editingId):[];
+  const docTypes=['CL','CV','APP','OTHER'];
+  const docTypeNames={CL:'Cover letter',CV:'CV / Résumé',APP:'Application form',OTHER:'Other document'};
+  const docTypeBtnClass={CL:'btn-cl',CV:'btn-cv',APP:'btn-app',OTHER:'btn-other'};
+
+  let docBlocksHtml='';
+  docTypes.forEach(type=>{
+    const existing=linked.filter(d=>d.type===type);
+    const hasTopic=type==='CL'||type==='CV';
+    existing.forEach((d,i)=>{
+      const bid=`existing-${d.id}`;
+      blockTopics[bid]=[...(d.topics||[])];
+      docBlocksHtml+=docBlock(bid,type,docTypeNames[type],d.name,d.description||'',hasTopic,type,d.content||'');
+    });
+  });
+
+  _show(`<div class="modal-bg" onclick="if(event.target===this)closeModal()"><div class="modal xl">
+    <h2><i class="ti ti-briefcase"></i>${editingId?'Edit':'New'} application</h2>
+    <div class="field-row">
+      <div class="field"><label>Job title</label><input id="f-title" value="${esc(j.title)}" placeholder="Policy Officer"></div>
+      <div class="field"><label>Organisation</label><input id="f-org" value="${esc(j.org)}" placeholder="DG REFORM"></div>
+    </div>
+    <div class="field-row">
+      <div class="field"><label>Location</label><input id="f-loc" value="${esc(j.location||'')}"></div>
+      <div class="field"><label>Status</label><select id="f-status">
+        ${['Wishlist','Applied','Test/Assessment','Interview','Offer','Rejected'].map(s=>`<option${s===j.status?' selected':''}>${s}</option>`).join('')}
+      </select></div>
+    </div>
+    <div class="field-row">
+      <div class="field"><label>Date applied</label><input type="date" id="f-date" value="${j.date}"></div>
+      <div class="field"><label>Deadline</label><input type="date" id="f-deadline" value="${j.deadline||''}"></div>
+    </div>
+    <div class="field"><label>Job post URL</label><input id="f-url" value="${esc(j.url||'')}" placeholder="https://…"></div>
+    <div class="field"><label>Notes</label><textarea id="f-notes" style="min-height:60px">${esc(j.notes||'')}</textarea></div>
+
+    <div class="modal-divider"><i class="ti ti-paperclip"></i> Documents</div>
+    <div id="job-doc-blocks">${docBlocksHtml}</div>
+    <div style="display:flex;gap:7px;flex-wrap:wrap;margin-bottom:.5rem">
+      <button class="btn btn-cl" onclick="addDocBlock('CL')"><i class="ti ti-plus"></i> Cover letter</button>
+      <button class="btn btn-cv" onclick="addDocBlock('CV')"><i class="ti ti-plus"></i> CV</button>
+      <button class="btn btn-app" onclick="addDocBlock('APP')"><i class="ti ti-plus"></i> App form</button>
+      <button class="btn btn-other" onclick="addDocBlock('OTHER')"><i class="ti ti-plus"></i> Other doc</button>
+    </div>
+    ${editingId?`<div style="font-size:11px;color:var(--text3);margin-bottom:.5rem">Documents previously linked to this application are shown above.</div>`:''}
+
+    <div class="modal-actions">
+      <button class="btn" onclick="closeModal()">Cancel</button>
+      <button class="btn primary" onclick="saveJobWithDocs()">Save</button>
+    </div>
+  </div></div>`);
+
+  // init topic inputs for existing blocks
+  Object.keys(blockTopics).forEach(bid=>{
+    const type=document.getElementById('block-'+bid)?.dataset.doctype;
+    if(type)initBlockTopics(bid,type);
+  });
+}
+
+let _blockCounter=0;
+function addDocBlock(type){
+  const bid='b'+(++_blockCounter);
+  blockTopics[bid]=[];
+  const hasTopic=type==='CL'||type==='CV';
+  const names={CL:'Cover letter',CV:'CV / Résumé',APP:'Application form',OTHER:'Other document'};
+  const container=document.getElementById('job-doc-blocks');
+  if(!container)return;
+  const div=document.createElement('div');
+  div.innerHTML=docBlock(bid,type,names[type],'','',hasTopic,type,'');
+  container.appendChild(div.firstElementChild);
+  initBlockTopics(bid,type);
+  document.getElementById('dbn-'+bid)?.focus();
+}
+
+function docBlock(bid,type,typeLabel,nameVal,descVal,hasTopic,topicType,contentVal){
+  const colors={CL:'var(--cl)',CV:'var(--cv)',APP:'var(--app)',OTHER:'var(--other)'};
+  const topicHtml=hasTopic?`
+    <div>
+      <div style="font-size:12px;color:var(--text2);font-weight:500;margin-bottom:5px">${type==='CV'?'Profile / specialisation':'Topics'}</div>
+      <div class="topic-wrap">
+        <input id="topic-inp-${bid}" autocomplete="off" placeholder="${type==='CV'?'e.g. EU Consultant, Programme Manager…':'e.g. Policy, Stakeholder engagement…'}"
+          style="width:100%;padding:7px 10px;font-size:12px;border:0.5px solid var(--border2);border-radius:var(--radius);background:var(--bg);color:var(--text);font-family:var(--font);outline:none">
+        <div class="topic-sug" id="topic-sug-${bid}"></div>
+      </div>
+      <div class="topic-chips" id="topic-chips-${bid}"></div>
+      <div style="font-size:11px;color:var(--text3);margin-top:3px">Type and press <kbd style="font-size:10px;padding:1px 4px;border:0.5px solid var(--border2);border-radius:3px;background:var(--bg)">Enter</kbd> to add — or pick from suggestions</div>
+    </div>`:'';
+
+  return `<div class="doc-block" id="block-${bid}" data-bid="${bid}" data-doctype="${type}">
+    <div class="doc-block-header">
+      <div class="doc-block-title" style="color:${colors[type]}"><i class="ti ti-${ticon(type)}"></i>${typeLabel}</div>
+      <div style="display:flex;gap:6px;align-items:center">
+        <button class="doc-block-toggle" onclick="toggleBlock('${bid}')"><i class="ti ti-chevron-up" id="btoggle-${bid}"></i></button>
+        <button class="btn danger" style="padding:3px 8px" onclick="removeBlock('${bid}')"><i class="ti ti-trash"></i></button>
+      </div>
+    </div>
+    <div class="doc-block-fields" id="bfields-${bid}">
+      <div>
+        <div style="font-size:12px;color:var(--text2);font-weight:500;margin-bottom:5px">Name</div>
+        <input id="dbn-${bid}" value="${esc(nameVal)}" placeholder="${type==='CL'?'Cover letter – Frontex AD6':type==='CV'?'CV – EU Consultant profile':type==='APP'?'Application form – Frontex':'Document name'}" style="width:100%;padding:7px 10px;font-size:13px;border:0.5px solid var(--border2);border-radius:var(--radius);background:var(--bg);color:var(--text);font-family:var(--font);outline:none">
+      </div>
+      ${hasTopic?topicHtml:''}
+      <div>
+        <div style="font-size:12px;color:var(--text2);font-weight:500;margin-bottom:5px">Description <span style="font-weight:400;color:var(--text3)">(optional)</span></div>
+        <input id="dbd-${bid}" value="${esc(descVal)}" placeholder="Brief note about this version…" style="width:100%;padding:7px 10px;font-size:12px;border:0.5px solid var(--border2);border-radius:var(--radius);background:var(--bg);color:var(--text);font-family:var(--font);outline:none">
+      </div>
+      <div>
+        <div style="font-size:12px;color:var(--text2);font-weight:500;margin-bottom:5px">Upload file <span style="font-weight:400;color:var(--text3)">(.docx .pdf .txt)</span></div>
+        <div class="drop-zone" ondragover="event.preventDefault();this.classList.add('drag-over')" ondragleave="this.classList.remove('drag-over')"
+          ondrop="event.preventDefault();this.classList.remove('drag-over');handleFileDrop(event.dataTransfer.files[0],'${bid}')">
+          <input type="file" accept=".docx,.pdf,.txt" onchange="handleFileDrop(this.files[0],'${bid}')">
+          <div class="dz-row"><div class="dz-icon"><i class="ti ti-cloud-upload"></i></div><div><div class="dz-label">Drop file or click to browse</div><div class="dz-sub">.docx · .pdf · .txt — max 10 MB</div></div></div>
+        </div>
+        <div class="upload-status" id="us-${bid}"></div>
+      </div>
+      <textarea id="dbc-${bid}" style="display:none">${esc(contentVal)}</textarea>
+    </div>
+  </div>`;
+}
+
+function toggleBlock(bid){
+  const fields=document.getElementById('bfields-'+bid);
+  const icon=document.getElementById('btoggle-'+bid);
+  if(!fields)return;
+  const collapsed=fields.style.display==='none';
+  fields.style.display=collapsed?'':'none';
+  if(icon){icon.className=collapsed?'ti ti-chevron-up':'ti ti-chevron-down';}
+}
+
+function removeBlock(bid){
+  const el=document.getElementById('block-'+bid);if(el)el.remove();
+  delete blockTopics[bid];
+}
+
+// ── BLOCK TOPIC INPUT ──
+function initBlockTopics(bid,type){
+  _renderBlockChips(bid,type);
+  const inp=document.getElementById('topic-inp-'+bid);
+  if(!inp)return;
+  inp.oninput=()=>_showBlockSug(bid,type);
+  inp.onkeydown=e=>{
+    if(e.key==='Enter'){e.preventDefault();_addBlockTopic(bid,type);}
+    if(e.key==='Escape')_hideBlockSug(bid);
+  };
+}
+function _showBlockSug(bid,type){
+  const inp=document.getElementById('topic-inp-'+bid),box=document.getElementById('topic-sug-'+bid);
+  if(!inp||!box)return;
+  const q=inp.value.toLowerCase();
+  if(!q){box.classList.remove('open');return;} // only show when typing
+  const current=blockTopics[bid]||[];
+  const all=TP[type]||[];
+  const matches=all.filter(t=>t.toLowerCase().includes(q)&&!current.includes(t));
+  if(!matches.length){box.classList.remove('open');return;}
+  box.innerHTML=matches.map(t=>`<div class="topic-sug-item" onmousedown="event.preventDefault();_pickBlockTopic('${bid}','${esc(t)}','${type}')">${esc(t)}</div>`).join('');
+  box.classList.add('open');
+}
+function _hideBlockSug(bid){const b=document.getElementById('topic-sug-'+bid);if(b)b.classList.remove('open');}
+function _pickBlockTopic(bid,t,type){if(!blockTopics[bid])blockTopics[bid]=[];if(!blockTopics[bid].includes(t))blockTopics[bid].push(t);const inp=document.getElementById('topic-inp-'+bid);if(inp)inp.value='';_hideBlockSug(bid);_renderBlockChips(bid,type);}
+function _addBlockTopic(bid,type){const inp=document.getElementById('topic-inp-'+bid);if(!inp)return;const v=inp.value.trim();if(!blockTopics[bid])blockTopics[bid]=[];if(v&&!blockTopics[bid].includes(v))blockTopics[bid].push(v);inp.value='';_hideBlockSug(bid);_renderBlockChips(bid,type);}
+function _removeBlockTopic(bid,t,type){blockTopics[bid]=(blockTopics[bid]||[]).filter(x=>x!==t);_renderBlockChips(bid,type);}
+function _renderBlockChips(bid,type){
+  const el=document.getElementById('topic-chips-'+bid);if(!el)return;
+  el.innerHTML=(blockTopics[bid]||[]).map(t=>`<span class="topic-chip-wrap">${tbadge(t)}<button onclick="_removeBlockTopic('${bid}','${esc(t)}','${type}')"><i class="ti ti-x" style="font-size:11px"></i></button></span>`).join('');
+}
+
+// ── SAVE JOB + DOCS ──
+function saveJobWithDocs(){
+  const title=document.getElementById('f-title').value.trim();
+  const org=document.getElementById('f-org').value.trim();
+  if(!title||!org)return alert('Please fill in job title and organisation.');
+  const j={id:editingId||uid(),title,org,
+    location:document.getElementById('f-loc').value.trim(),
+    status:document.getElementById('f-status').value,
+    date:document.getElementById('f-date').value,
+    deadline:document.getElementById('f-deadline').value,
+    url:document.getElementById('f-url').value.trim(),
+    notes:document.getElementById('f-notes').value.trim()};
+  if(editingId){const i=state.jobs.findIndex(x=>x.id===editingId);if(i>=0)state.jobs[i]=j;}
+  else state.jobs.unshift(j);
+
+  // collect doc blocks
+  const blocks=document.querySelectorAll('#job-doc-blocks .doc-block');
+  // track which existing doc ids we've seen
+  const seenExistingIds=new Set();
+
+  blocks.forEach(block=>{
+    const bid=block.dataset.bid;
+    const dtype=block.dataset.doctype;
+    const name=(document.getElementById('dbn-'+bid)?.value||'').trim();
+    if(!name)return; // skip empty
+    const desc=document.getElementById('dbd-'+bid)?.value||'';
+    const content=document.getElementById('dbc-'+bid)?.value||'';
+    const topics=blockTopics[bid]||[];
+
+    if(bid.startsWith('existing-')){
+      // update existing doc
+      const docId=bid.replace('existing-','');
+      seenExistingIds.add(docId);
+      const i=state.docs.findIndex(x=>x.id===docId);
+      if(i>=0){state.docs[i]={...state.docs[i],name,description:desc,content,topics,linkedJob:j.id};}
+    }else{
+      // new doc
+      state.docs.unshift({id:uid(),type:dtype,name,description:desc,content,topics,linkedJob:j.id,date:j.date});
+    }
+  });
+
+  save();closeModal();refreshTopicFilters();render();
+}
+
+// ── STANDALONE DOC MODAL ──
+function openDocModal(docType,linkedJobId,existingDoc){
+  const d=existingDoc||{type:docType,name:'',linkedJob:linkedJobId||'',date:new Date().toISOString().slice(0,10),content:'',topics:[],description:''};
+  editingId=existingDoc?existingDoc.id:null;
+  blockTopics={main:[...(d.topics||[])]};
+  const jobOpts=state.jobs.map(j=>`<option value="${j.id}"${j.id===(d.linkedJob||linkedJobId)?' selected':''}>${esc(j.org)} – ${esc(j.title)}</option>`).join('');
+  const hasTopic=docType==='CL'||docType==='CV';
+  const names={CL:'Cover letter',CV:'CV / Résumé',APP:'Application form',OTHER:'Other document'};
+  const topicLabel={CL:'Topics',CV:'Profile / specialisation',APP:'Institution type',OTHER:'Tags'}[docType]||'Topics';
+
+  _show(`<div class="modal-bg" onclick="if(event.target===this)closeModal()"><div class="modal">
+    <h2><span class="lib-card-icon ${docType.toLowerCase()}" style="width:26px;height:26px;font-size:13px;border-radius:6px"><i class="ti ti-${ticon(docType)}"></i></span>
+      <span style="color:${tcolor(docType)}">${editingId?'Edit':'New'} ${names[docType]}</span>
+    </h2>
+    <div class="field"><label>Name</label><input id="d-name" value="${esc(d.name)}" placeholder="${names[docType]}"></div>
+    <div class="field"><label>Description <span style="font-weight:400;color:var(--text3)">(optional)</span></label>
+      <input id="d-desc" value="${esc(d.description||'')}"></div>
+    ${hasTopic||docType==='APP'||docType==='OTHER'?`<div class="field">
+      <label>${topicLabel}</label>
+      <div class="topic-wrap">
+        <input id="topic-inp-main" autocomplete="off" placeholder="${docType==='CV'?'e.g. EU Consultant, Programme Manager…':'e.g. Policy, Stakeholder engagement…'}"
+          style="width:100%;padding:8px 10px;font-size:13px;border:0.5px solid var(--border2);border-radius:var(--radius);background:var(--bg);color:var(--text);font-family:var(--font);outline:none">
+        <div class="topic-sug" id="topic-sug-main"></div>
+      </div>
+      <div class="topic-chips" id="topic-chips-main"></div>
+      <div style="font-size:11px;color:var(--text3);margin-top:4px">Type and press <kbd style="font-size:10px;padding:1px 5px;border:0.5px solid var(--border2);border-radius:3px;background:var(--bg2)">Enter</kbd> to add — or pick from suggestions</div>
+    </div>`:''}
+    <div class="field"><label>Linked application</label>
+      <select id="d-job"><option value="">— None —</option>${jobOpts}</select></div>
+    <div class="field"><label>Date</label><input type="date" id="d-date" value="${d.date}"></div>
+    <div class="field">
+      <label>Upload file <span style="font-weight:400;color:var(--text3)">(.docx .pdf .txt)</span></label>
+      <div class="drop-zone" ondragover="event.preventDefault();this.classList.add('drag-over')" ondragleave="this.classList.remove('drag-over')"
+        ondrop="event.preventDefault();this.classList.remove('drag-over');handleFileDrop(event.dataTransfer.files[0],'main')">
+        <input type="file" accept=".docx,.pdf,.txt" onchange="handleFileDrop(this.files[0],'main')">
+        <div class="dz-row"><div class="dz-icon"><i class="ti ti-cloud-upload"></i></div><div><div class="dz-label">Drop file or click to browse</div><div class="dz-sub">.docx · .pdf · .txt — max 10 MB</div></div></div>
+      </div>
+      <div class="upload-status" id="us-main"></div>
+    </div>
+    <textarea id="d-content" style="display:none">${esc(d.content||'')}</textarea>
+    <div class="modal-actions">
+      <button class="btn" onclick="closeModal()">Cancel</button>
+      <button class="btn primary" onclick="saveStandaloneDoc('${docType}')">Save</button>
+    </div>
+  </div></div>`);
+  initBlockTopics('main',docType);
+}
+
+function saveStandaloneDoc(docType){
+  const name=document.getElementById('d-name').value.trim();
+  if(!name)return alert('Please enter a name.');
+  const d={id:editingId||uid(),type:docType,name,
+    description:document.getElementById('d-desc')?.value.trim()||'',
+    topics:blockTopics['main']||[],
+    linkedJob:document.getElementById('d-job').value,
+    date:document.getElementById('d-date').value,
+    content:document.getElementById('d-content').value};
+  if(editingId){const i=state.docs.findIndex(x=>x.id===editingId);if(i>=0)state.docs[i]=d;}
+  else state.docs.unshift(d);
+  save();closeModal();refreshTopicFilters();render();
+}
+
+// ── CV PICKER ──
+function openCvPicker(jobId){
+  const cvs=state.docs.filter(d=>d.type==='CV');
+  const linked=state.docs.filter(d=>d.type==='CV'&&d.linkedJob===jobId).map(d=>d.id);
+  const items=cvs.length?cvs.map(d=>`
+    <div class="cv-pick-item${linked.includes(d.id)?' sel':''}" id="cvpi-${d.id}" onclick="toggleCvLink('${d.id}','${jobId}')">
+      <div class="lib-card-icon cv" style="width:28px;height:28px;font-size:13px;flex-shrink:0"><i class="ti ti-id"></i></div>
+      <div style="flex:1;min-width:0">
+        <div style="font-size:13px;font-weight:500;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(d.name)}</div>
+        <div style="font-size:11px;color:var(--text2);margin-top:2px">${tbadges(d.topics)} ${fmtDate(d.date)}</div>
+      </div>
+      <i class="ti ti-check" style="color:var(--cv);display:${linked.includes(d.id)?'block':'none'}" id="cvchk-${d.id}"></i>
+    </div>`).join('')
+    :`<div style="font-size:13px;color:var(--text2);padding:.75rem 0">No CVs saved yet.</div>`;
+  _show(`<div class="modal-bg" onclick="if(event.target===this)closeModal()"><div class="modal">
+    <h2><i class="ti ti-id" style="color:var(--cv)"></i> Add CV to application</h2>
+    ${cvs.length?`<div style="font-size:12px;color:var(--text2);margin-bottom:.75rem">Click to link or unlink an existing CV:</div>
+    <div class="cv-pick-list">${items}</div>
+    <div style="font-size:12px;color:var(--text2);margin-top:1rem;margin-bottom:.4rem;font-weight:600">Or create a new CV:</div>`:''}
+    <div class="modal-actions" style="margin-top:.5rem;padding-top:.5rem">
+      <button class="btn" onclick="closeModal()">Done</button>
+      <button class="btn btn-cv" onclick="closeModal();openDocModal('CV','${jobId}',null)"><i class="ti ti-plus"></i> New CV</button>
+    </div>
+  </div></div>`);
+}
+function toggleCvLink(cvId,jobId){
+  const d=state.docs.find(x=>x.id===cvId);if(!d)return;
+  const linked=d.linkedJob===jobId;
+  d.linkedJob=linked?'':jobId;
+  document.getElementById('cvpi-'+cvId)?.classList.toggle('sel',!linked);
+  const chk=document.getElementById('cvchk-'+cvId);if(chk)chk.style.display=linked?'none':'block';
+  save();renderPipeline();
+}
+
+// ── VIEW DOC ──
+function viewDoc(id){
+  const d=state.docs.find(x=>x.id===id);if(!d)return;
+  const job=state.jobs.find(j=>j.id===d.linkedJob);
+  _show(`<div class="modal-bg" onclick="if(event.target===this)closeModal()"><div class="modal xl">
+    <h2><span class="lib-card-icon ${d.type.toLowerCase()}" style="width:26px;height:26px;font-size:13px;border-radius:6px"><i class="ti ti-${ticon(d.type)}"></i></span>${esc(d.name)}</h2>
+    ${(d.topics||[]).length?`<div style="display:flex;gap:4px;flex-wrap:wrap;margin-bottom:10px">${tbadges(d.topics)}</div>`:''}
+    ${d.description?`<div style="font-size:12px;color:var(--text2);margin-bottom:8px">${esc(d.description)}</div>`:''}
+    ${job?`<div style="font-size:11px;color:var(--text3);margin-bottom:8px;display:flex;align-items:center;gap:4px"><i class="ti ti-link"></i>${esc(job.org)}</div>`:''}
+    <div style="font-size:13px;line-height:1.7;white-space:pre-wrap;max-height:440px;overflow-y:auto;padding:1rem;background:var(--bg2);border-radius:var(--radius);border:0.5px solid var(--border)">${esc(d.content||'(no content stored)')}</div>
+    <div class="modal-actions">
+      <button class="btn" onclick="copyDoc('${d.id}')"><i class="ti ti-copy"></i> Copy</button>
+      <button class="btn" onclick="closeModal();openDocModal('${d.type}',null,state.docs.find(x=>x.id==='${d.id}'))"><i class="ti ti-edit"></i> Edit</button>
+      <button class="btn primary" onclick="closeModal()">Close</button>
+    </div>
+  </div></div>`);
+}
+
+function openStatusModal(id){
+  const j=state.jobs.find(x=>x.id===id);if(!j)return;editingId=id;
+  _show(`<div class="modal-bg" onclick="if(event.target===this)closeModal()"><div class="modal">
+    <h2>Update status</h2>
+    <div style="font-size:13px;color:var(--text2);margin-bottom:1rem">${esc(j.org)} – ${esc(j.title)}</div>
+    <div class="field"><label>New status</label><select id="s-status">
+      ${['Wishlist','Applied','Test/Assessment','Interview','Offer','Rejected'].map(s=>`<option${s===j.status?' selected':''}>${s}</option>`).join('')}
+    </select></div>
+    <div class="modal-actions">
+      <button class="btn" onclick="closeModal()">Cancel</button>
+      <button class="btn primary" onclick="applyStatus()">Update</button>
+    </div>
+  </div></div>`);
+}
+function applyStatus(){
+  const i=state.jobs.findIndex(x=>x.id===editingId);
+  if(i>=0)state.jobs[i].status=document.getElementById('s-status').value;
+  save();closeModal();render();
+}
+
+// ── FOLLOW-UP MODAL ──
+function openFollowUpModal(jobId){
+  const j=state.jobs.find(x=>x.id===jobId);if(!j)return;
+  editingId=jobId;
+  _show(`<div class="modal-bg" onclick="if(event.target===this)closeModal()"><div class="modal">
+    <h2><i class="ti ti-bell" style="color:#8a5a00"></i> Follow-up reminder</h2>
+    <div style="font-size:13px;color:var(--text2);margin-bottom:1rem">${esc(j.org)} – ${esc(j.title)}</div>
+    <div class="field"><label>Follow-up date</label><input type="date" id="fu-date" value="${j.followUpDate||''}"></div>
+    <div class="field"><label>Contact person <span style="font-weight:400;color:var(--text3)">(name, email or both)</span></label>
+      <input id="fu-contact" value="${esc(j.followUpContact||'')}" placeholder="e.g. Jane Smith · jane@ec.europa.eu"></div>
+    <div class="field"><label>Note</label>
+      <textarea id="fu-note" style="min-height:70px">${esc(j.followUpNote||'')}</textarea></div>
+    <div class="modal-actions">
+      ${j.followUp?`<button class="btn danger" onclick="clearFollowUp('${jobId}')"><i class="ti ti-bell-off"></i> Remove</button>`:''}
+      <button class="btn" onclick="closeModal()">Cancel</button>
+      <button class="btn primary" onclick="saveFollowUp('${jobId}')">Save</button>
+    </div>
+  </div></div>`);
+}
+function saveFollowUp(jobId){
+  const i=state.jobs.findIndex(x=>x.id===jobId);if(i<0)return;
+  state.jobs[i].followUp=true;
+  state.jobs[i].followUpDate=document.getElementById('fu-date').value;
+  state.jobs[i].followUpContact=document.getElementById('fu-contact').value.trim();
+  state.jobs[i].followUpNote=document.getElementById('fu-note').value.trim();
+  save();closeModal();renderPipeline();
+}
+function clearFollowUp(jobId){
+  const i=state.jobs.findIndex(x=>x.id===jobId);if(i<0)return;
+  state.jobs[i].followUp=false;
+  state.jobs[i].followUpDate='';state.jobs[i].followUpContact='';state.jobs[i].followUpNote='';
+  save();closeModal();renderPipeline();
+}
+
+function _show(html){const ov=document.getElementById('modal-overlay');ov.innerHTML=html;ov.style.display='block';}
+function closeModal(){const ov=document.getElementById('modal-overlay');ov.style.display='none';ov.innerHTML='';editingId=null;blockTopics={};}
+function copyDoc(id){const d=state.docs.find(x=>x.id===id);if(!d)return;navigator.clipboard.writeText(d.content||'').then(()=>alert('Copied!')).catch(()=>alert('Could not copy.'));}
+function deleteJob(id){if(confirm('Delete this application?')){state.jobs=state.jobs.filter(x=>x.id!==id);save();render();}}
+function deleteDoc(id){if(confirm('Delete this document?')){state.docs=state.docs.filter(x=>x.id!==id);save();refreshTopicFilters();render();}}
+
+// ── FILE PARSING ──
+let _pdfjs=null;
+async function _getPdfJs(){
+  if(_pdfjs)return _pdfjs;
+  try{const m=await import('https://cdn.jsdelivr.net/npm/pdfjs-dist@4.4.168/build/pdf.min.mjs');m.GlobalWorkerOptions.workerSrc='https://cdn.jsdelivr.net/npm/pdfjs-dist@4.4.168/build/pdf.worker.min.mjs';_pdfjs=m;return m;}catch{return null;}
+}
+function _setUs(bid,msg,cls){const e=document.getElementById('us-'+bid);if(e){e.textContent=msg;e.className='upload-status '+cls;}}
+async function handleFileDrop(file,bid){
+  if(!file)return;
+  if(file.size>10*1024*1024){_setUs(bid,'File too large (max 10 MB)','err');return;}
+  const ext=file.name.split('.').pop().toLowerCase();
+  // auto-fill name for block or standalone
+  const nameEl=document.getElementById(bid==='main'?'d-name':'dbn-'+bid);
+  if(nameEl&&!nameEl.value.trim())nameEl.value=file.name.replace(/\.[^.]+$/,'');
+  _setUs(bid,'Reading…','loading');
+  const contentEl=document.getElementById(bid==='main'?'d-content':'dbc-'+bid);
+  try{
+    if(ext==='txt'){
+      const t=await _rText(file);contentEl.value=t;
+      _setUs(bid,`✓ ${t.length.toLocaleString()} characters`,'ok');
+    }else if(ext==='docx'||ext==='doc'){
+      if(typeof mammoth==='undefined'){_setUs(bid,'mammoth.js not loaded','err');return;}
+      const r=await mammoth.extractRawText({arrayBuffer:await _rBuf(file)});
+      contentEl.value=r.value||'';
+      _setUs(bid,`✓ Word: ${(r.value||'').length.toLocaleString()} chars`,'ok');
+    }else if(ext==='pdf'){
+      const lib=await _getPdfJs();
+      if(!lib){_setUs(bid,'PDF.js failed — check connection','err');return;}
+      const pdf=await lib.getDocument({data:await _rBuf(file)}).promise;
+      let t='';for(let i=1;i<=pdf.numPages;i++){const pg=await pdf.getPage(i);const c=await pg.getTextContent();t+=(i>1?'\n\n':'')+c.items.map(x=>x.str).join(' ');}
+      contentEl.value=t.replace(/ {2,}/g,' ').trim();
+      _setUs(bid,`✓ PDF: ${pdf.numPages} pages`,'ok');
+    }else{_setUs(bid,'Use .docx, .pdf or .txt','err');}
+  }catch(err){_setUs(bid,'Error: '+err.message,'err');}
+}
+function _rText(f){return new Promise((res,rej)=>{const r=new FileReader();r.onload=e=>res(e.target.result);r.onerror=rej;r.readAsText(f,'UTF-8');});}
+function _rBuf(f){return new Promise((res,rej)=>{const r=new FileReader();r.onload=e=>res(e.target.result);r.onerror=rej;r.readAsArrayBuffer(f);});}
+
+load();
+</script>
+
+<script>
+// ── Service Worker ──
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('./sw.js')
+      .then(r => console.log('SW:', r.scope))
+      .catch(e => console.warn('SW error:', e));
+  });
+}
+
+// ── Mobile tab switch (syncs bottom bar + desktop tabs + sections) ──
+function switchTabAll(t, el) {
+  document.querySelectorAll('.tab').forEach(b => b.classList.remove('active'));
+  document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+  document.querySelectorAll('.bottom-tab').forEach(b => b.classList.remove('active'));
+  const dt = document.querySelector('.tab[data-tab="' + t + '"]');
+  if (dt) dt.classList.add('active');
+  const sec = document.getElementById('tab-' + t);
+  if (sec) sec.classList.add('active');
+  if (el) el.classList.add('active');
+  else {
+    const bt = document.getElementById('btab-' + t);
+    if (bt) bt.classList.add('active');
+  }
+}
+</script>
+</body>
+</html>
