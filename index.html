@@ -198,8 +198,6 @@ body {
   -webkit-tap-highlight-color: transparent;
   overscroll-behavior-y: none;
 }
-
-/* ── Mobile: sticky header replaces .top-bar ── */
 .pwa-header {
   display: none;
   position: sticky;
@@ -213,8 +211,6 @@ body {
   gap: 8px;
   flex-wrap: wrap;
 }
-
-/* ── Mobile: bottom tab bar ── */
 .bottom-tabs {
   display: none;
   position: fixed;
@@ -239,13 +235,45 @@ body {
   font-family: var(--font);
   gap: 2px;
   -webkit-tap-highlight-color: transparent;
-  letter-spacing: .2px;
 }
 .bottom-tab i { font-size: 21px; }
 .bottom-tab.active { color: var(--cl); }
-.bottom-tab.active i { }
-
-/* ── Mobile layout ── */
+.sync-dot {
+  width: 8px; height: 8px; border-radius: 50%;
+  display: inline-block; margin-left: 4px; vertical-align: middle; flex-shrink: 0;
+}
+.sync-dot.ok { background: #3b6d11; }
+.sync-dot.syncing { background: #854f0b; animation: pulse .8s infinite alternate; }
+.sync-dot.err { background: #a32d2d; }
+@keyframes pulse { from { opacity:1 } to { opacity:.3 } }
+.sync-bar {
+  font-size: 11px; color: var(--text2);
+  padding: 5px 1.5rem;
+  display: flex; align-items: center; gap: 8px;
+  border-bottom: 0.5px solid var(--border);
+  background: var(--bg3);
+}
+/* Setup modal overlay */
+.setup-overlay {
+  position: fixed; inset: 0; background: rgba(0,0,0,.55);
+  display: flex; align-items: center; justify-content: center;
+  z-index: 500; padding: 1.5rem;
+}
+.setup-box {
+  background: var(--bg); border-radius: var(--radius-lg);
+  padding: 1.75rem; width: 100%; max-width: 440px;
+  border: 0.5px solid var(--border);
+}
+.setup-box h2 { font-size: 16px; font-weight: 600; margin-bottom: .5rem; display:flex;align-items:center;gap:8px }
+.setup-box p { font-size: 13px; color: var(--text2); margin-bottom: 1.25rem; line-height: 1.6 }
+.setup-box input {
+  width: 100%; padding: 9px 11px; font-size: 13px;
+  border: 0.5px solid var(--border2); border-radius: var(--radius);
+  background: var(--bg); color: var(--text); font-family: var(--font);
+  outline: none; margin-bottom: 10px;
+}
+.setup-box input:focus { border-color: var(--text); }
+.setup-box .hint { font-size: 11px; color: var(--text3); margin-bottom: 1rem; line-height: 1.5 }
 @media (max-width: 640px) {
   .pwa-header { display: flex; }
   .bottom-tabs { display: flex; }
@@ -255,11 +283,7 @@ body {
   .scroll-area {
     padding: .75rem calc(var(--sar) + .9rem) calc(var(--sab) + 72px) calc(var(--sal) + .9rem);
   }
-  /* Sheet-style modals */
-  .modal-bg {
-    align-items: flex-end;
-    padding: 0;
-  }
+  .modal-bg { align-items: flex-end; padding: 0; }
   .modal {
     border-radius: 20px 20px 0 0;
     max-width: 100%;
@@ -268,14 +292,10 @@ body {
     -webkit-overflow-scrolling: touch;
   }
   .modal.xl { max-width: 100%; }
-  /* Larger tap targets */
   .btn { min-height: 38px; }
   .filter-chip { min-height: 34px; }
-  .bottom-tab { min-width: 44px; min-height: 44px; }
-  /* lib grid single column on small screens */
   .lib-grid { grid-template-columns: 1fr; }
 }
-
 @media (min-width: 641px) {
   .pwa-header { display: none !important; }
   .bottom-tabs { display: none !important; }
@@ -286,33 +306,48 @@ body {
 </head>
 <body>
 
-  <!-- PWA sticky header (mobile) -->
-  <div class="pwa-header" id="pwa-header">
-    <h1 style="font-size:17px;font-weight:600"><i class="ti ti-briefcase"></i> Job Tracker</h1>
-    <div style="display:flex;gap:6px">
-      <button class="btn primary" onclick="openJobModal(null)" style="font-size:12px;padding:5px 11px"><i class="ti ti-plus"></i> New</button>
-      <button class="btn" onclick="exportData()" style="font-size:12px;padding:5px 9px"><i class="ti ti-download"></i></button>
-      <label class="btn" style="font-size:12px;padding:5px 9px;cursor:pointer"><i class="ti ti-upload"></i><input type="file" accept=".json" onchange="importData(event)" style="display:none"></label>
+  <!-- Setup overlay (shown until token is configured) -->
+  <div class="setup-overlay" id="setup-overlay" style="display:none">
+    <div class="setup-box">
+      <h2><i class="ti ti-refresh" style="color:var(--cl)"></i> GitHub Sync Setup</h2>
+      <p>Inserisci il tuo GitHub Personal Access Token per abilitare la sincronizzazione tra dispositivi. Il token viene salvato solo su questo dispositivo.</p>
+      <input id="setup-token" type="password" placeholder="ghp_..." autocomplete="off" spellcheck="false">
+      <div class="hint">
+        Crea il token su GitHub → Settings → Developer settings → Personal access tokens → Tokens (classic) → scope: <b>repo</b>
+      </div>
+      <div style="display:flex;gap:8px;justify-content:flex-end">
+        <button class="btn" onclick="dismissSetup()">Salta (solo locale)</button>
+        <button class="btn primary" onclick="saveSetupToken()"><i class="ti ti-check"></i> Salva e connetti</button>
+      </div>
     </div>
   </div>
 
+  <!-- PWA sticky header (mobile) -->
+  <div class="pwa-header" id="pwa-header">
+    <h1 style="font-size:17px;font-weight:600"><i class="ti ti-briefcase"></i> Job Tracker</h1>
+    <div style="display:flex;gap:6px;align-items:center">
+      <span class="sync-dot ok" id="sync-dot-mob"></span>
+      <button class="btn primary" onclick="openJobModal(null)" style="font-size:12px;padding:5px 11px"><i class="ti ti-plus"></i> New</button>
+      <button class="btn" onclick="ghSync()" style="font-size:12px;padding:5px 9px" title="Sync now"><i class="ti ti-refresh"></i></button>
+    </div>
+  </div>
+
+  <!-- Sync bar (always visible) -->
+  <div class="sync-bar" id="sync-bar">
+    <span class="sync-dot ok" id="sync-dot-desk"></span>
+    <span id="sync-label">Inizializzazione…</span>
+    <span style="flex:1"></span>
+    <button class="btn" onclick="ghSync()" style="font-size:11px;padding:3px 8px"><i class="ti ti-refresh"></i> Sync</button>
+    <button class="btn" onclick="openGhSettings()" style="font-size:11px;padding:3px 8px" title="GitHub settings"><i class="ti ti-settings"></i></button>
+  </div>
+
   <!-- Bottom tab bar (mobile) -->
-  <div class="bottom-tabs" id="bottom-tabs">
-    <button class="bottom-tab active" id="btab-pipeline" onclick="switchTabAll('pipeline',this)">
-      <i class="ti ti-layout-list"></i>Pipeline
-    </button>
-    <button class="bottom-tab" id="btab-cl" onclick="switchTabAll('cl',this)">
-      <i class="ti ti-file-text"></i>Cover letters
-    </button>
-    <button class="bottom-tab" id="btab-cv" onclick="switchTabAll('cv',this)">
-      <i class="ti ti-id"></i>CVs
-    </button>
-    <button class="bottom-tab" id="btab-appforms" onclick="switchTabAll('appforms',this)">
-      <i class="ti ti-forms"></i>Forms
-    </button>
-    <button class="bottom-tab" id="btab-other" onclick="switchTabAll('other',this)">
-      <i class="ti ti-files"></i>Other
-    </button>
+  <div class="bottom-tabs">
+    <button class="bottom-tab active" id="btab-pipeline" onclick="switchTabAll('pipeline',this)"><i class="ti ti-layout-list"></i>Pipeline</button>
+    <button class="bottom-tab" id="btab-cl" onclick="switchTabAll('cl',this)"><i class="ti ti-file-text"></i>CL</button>
+    <button class="bottom-tab" id="btab-cv" onclick="switchTabAll('cv',this)"><i class="ti ti-id"></i>CV</button>
+    <button class="bottom-tab" id="btab-appforms" onclick="switchTabAll('appforms',this)"><i class="ti ti-forms"></i>Forms</button>
+    <button class="bottom-tab" id="btab-other" onclick="switchTabAll('other',this)"><i class="ti ti-files"></i>Other</button>
   </div>
 <div class="app">
 
@@ -1031,34 +1066,191 @@ async function handleFileDrop(file,bid){
 function _rText(f){return new Promise((res,rej)=>{const r=new FileReader();r.onload=e=>res(e.target.result);r.onerror=rej;r.readAsText(f,'UTF-8');});}
 function _rBuf(f){return new Promise((res,rej)=>{const r=new FileReader();r.onload=e=>res(e.target.result);r.onerror=rej;r.readAsArrayBuffer(f);});}
 
-load();
+// startup handled by init above
 </script>
 
 <script>
-// ── Service Worker ──
-if ('serviceWorker' in navigator) {
-  window.addEventListener('load', () => {
-    navigator.serviceWorker.register('./sw.js')
-      .then(r => console.log('SW:', r.scope))
-      .catch(e => console.warn('SW error:', e));
-  });
+// ── GitHub config (user/repo hardcoded, token from localStorage) ──
+const GH_USER = 'calofirliviu29';
+const GH_REPO = 'job-tracker';
+const GH_FILE = 'data.json';
+const GH_API  = `https://api.github.com/repos/${GH_USER}/${GH_REPO}/contents/${GH_FILE}`;
+const TOKEN_KEY = 'gh_token_jt';
+
+let _ghSha = null;
+let _syncTimer = null;
+
+function getToken() { return localStorage.getItem(TOKEN_KEY) || ''; }
+
+function _setSyncStatus(state, msg) {
+  [document.getElementById('sync-dot-mob'), document.getElementById('sync-dot-desk')]
+    .forEach(d => { if(d) d.className = 'sync-dot ' + state; });
+  const lbl = document.getElementById('sync-label');
+  if(lbl) lbl.textContent = msg;
 }
 
-// ── Mobile tab switch (syncs bottom bar + desktop tabs + sections) ──
+// ── Setup overlay ──
+function checkSetup() {
+  if(!getToken()) {
+    document.getElementById('setup-overlay').style.display = 'flex';
+  }
+}
+function dismissSetup() {
+  document.getElementById('setup-overlay').style.display = 'none';
+  _setSyncStatus('err', 'Sync disabilitato — solo locale');
+}
+function saveSetupToken() {
+  const t = document.getElementById('setup-token').value.trim();
+  if(!t.startsWith('ghp_') && !t.startsWith('github_pat_')) {
+    alert('Il token non sembra valido. Deve iniziare con ghp_');
+    return;
+  }
+  localStorage.setItem(TOKEN_KEY, t);
+  document.getElementById('setup-overlay').style.display = 'none';
+  ghSync();
+}
+function openGhSettings() {
+  const cur = getToken();
+  const masked = cur ? cur.slice(0,8) + '…' : '(non configurato)';
+  const html = `<div class="modal-bg" onclick="if(event.target===this)closeModal()"><div class="modal">
+    <h2><i class="ti ti-settings"></i> GitHub Sync</h2>
+    <div class="field"><label>Token attuale</label>
+      <input id="gh-token-inp" type="password" value="${cur}" placeholder="ghp_..." 
+        style="width:100%;padding:8px 10px;font-size:13px;border:0.5px solid var(--border2);border-radius:var(--radius);background:var(--bg);color:var(--text);font-family:var(--font);outline:none">
+    </div>
+    <div style="font-size:11px;color:var(--text3);margin-bottom:1rem">Attuale: ${masked}</div>
+    <div class="modal-actions">
+      <button class="btn danger" onclick="localStorage.removeItem('${TOKEN_KEY}');closeModal();_setSyncStatus('err','Token rimosso')">Rimuovi</button>
+      <button class="btn" onclick="closeModal()">Annulla</button>
+      <button class="btn primary" onclick="localStorage.setItem('${TOKEN_KEY}',document.getElementById('gh-token-inp').value.trim());closeModal();ghSync()">Salva</button>
+    </div>
+  </div></div>`;
+  _show(html);
+}
+
+// ── Pull from GitHub ──
+async function ghPull() {
+  const token = getToken();
+  if(!token) return;
+  _setSyncStatus('syncing', 'Sincronizzazione…');
+  try {
+    const r = await fetch(GH_API + '?t=' + Date.now(), {
+      headers: {
+        'Authorization': 'token ' + token,
+        'Accept': 'application/vnd.github.v3+json'
+      }
+    });
+    if(r.status === 404) {
+      _setSyncStatus('ok', 'Nessun dato remoto — verrà creato al primo salvataggio');
+      return;
+    }
+    if(r.status === 401) {
+      _setSyncStatus('err', 'Token non valido — clicca ⚙ per aggiornarlo');
+      return;
+    }
+    if(!r.ok) throw new Error('HTTP ' + r.status);
+    const json = await r.json();
+    _ghSha = json.sha;
+    const decoded = JSON.parse(atob(json.content.replace(/\n/g, '')));
+    state.jobs = decoded.jobs || [];
+    state.docs  = decoded.docs  || [];
+    save();
+    refreshTopicFilters();
+    render();
+    _setSyncStatus('ok', 'Sincronizzato ' + new Date().toLocaleTimeString());
+  } catch(e) {
+    console.error('ghPull:', e);
+    _setSyncStatus('err', 'Errore: ' + e.message);
+  }
+}
+
+// ── Push to GitHub ──
+async function ghPush() {
+  const token = getToken();
+  if(!token) return;
+  _setSyncStatus('syncing', 'Salvataggio…');
+  try {
+    const content = btoa(unescape(encodeURIComponent(JSON.stringify(state, null, 2))));
+    const body = {
+      message: 'sync ' + new Date().toISOString(),
+      content,
+      ...(_ghSha ? {sha: _ghSha} : {})
+    };
+    const r = await fetch(GH_API, {
+      method: 'PUT',
+      headers: {
+        'Authorization': 'token ' + token,
+        'Accept': 'application/vnd.github.v3+json',
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify(body)
+    });
+    if(r.status === 409 || r.status === 422) {
+      await ghPull();
+      await ghPush();
+      return;
+    }
+    if(r.status === 401) {
+      _setSyncStatus('err', 'Token non valido — clicca ⚙ per aggiornarlo');
+      return;
+    }
+    if(!r.ok) throw new Error('HTTP ' + r.status);
+    const json = await r.json();
+    _ghSha = json.content.sha;
+    _setSyncStatus('ok', 'Salvato ' + new Date().toLocaleTimeString());
+  } catch(e) {
+    console.error('ghPush:', e);
+    _setSyncStatus('err', 'Errore salvataggio: ' + e.message);
+  }
+}
+
+function schedulePush() {
+  if(_syncTimer) clearTimeout(_syncTimer);
+  _syncTimer = setTimeout(ghPush, 1500);
+}
+
+async function ghSync() {
+  await ghPull();
+}
+
+// ── Mobile tab sync ──
 function switchTabAll(t, el) {
   document.querySelectorAll('.tab').forEach(b => b.classList.remove('active'));
   document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
   document.querySelectorAll('.bottom-tab').forEach(b => b.classList.remove('active'));
   const dt = document.querySelector('.tab[data-tab="' + t + '"]');
-  if (dt) dt.classList.add('active');
+  if(dt) dt.classList.add('active');
   const sec = document.getElementById('tab-' + t);
-  if (sec) sec.classList.add('active');
-  if (el) el.classList.add('active');
-  else {
-    const bt = document.getElementById('btab-' + t);
-    if (bt) bt.classList.add('active');
-  }
+  if(sec) sec.classList.add('active');
+  if(el) el.classList.add('active');
+  else { const bt = document.getElementById('btab-' + t); if(bt) bt.classList.add('active'); }
 }
+
+// ── Service Worker ──
+if('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('./sw.js')
+      .then(r => console.log('SW:', r.scope))
+      .catch(e => console.warn('SW:', e));
+  });
+}
+</script>
+
+<script>
+// Patch save() to also push to GitHub
+const __origSave = save;
+window.save = function() {
+  __origSave();
+  schedulePush();
+};
+
+// Startup: load local first, then pull from GitHub
+(async () => {
+  load();
+  checkSetup();
+  if(getToken()) await ghPull();
+  else _setSyncStatus('err', 'Sync non configurato — clicca ⚙');
+})();
 </script>
 </body>
 </html>
