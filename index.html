@@ -302,955 +302,213 @@ body {
   .scroll-area { padding: 2rem 1.5rem; }
 }
 
-</style>
-</head>
-<body>
 
-  <!-- Setup overlay (shown until token is configured) -->
-  <div class="setup-overlay" id="setup-overlay" style="display:none">
-    <div class="setup-box">
-      <h2><i class="ti ti-refresh" style="color:var(--cl)"></i> GitHub Sync Setup</h2>
-      <p>Inserisci il tuo GitHub Personal Access Token per abilitare la sincronizzazione tra dispositivi. Il token viene salvato solo su questo dispositivo.</p>
-      <input id="setup-token" type="password" placeholder="ghp_..." autocomplete="off" spellcheck="false">
-      <div class="hint">
-        Crea il token su GitHub → Settings → Developer settings → Personal access tokens → Tokens (classic) → scope: <b>repo</b>
-      </div>
-      <div style="display:flex;gap:8px;justify-content:flex-end">
-        <button class="btn" onclick="dismissSetup()">Salta (solo locale)</button>
-        <button class="btn primary" onclick="saveSetupToken()"><i class="ti ti-check"></i> Salva e connetti</button>
-      </div>
-    </div>
-  </div>
-
-  <!-- PWA sticky header (mobile) -->
-  <div class="pwa-header" id="pwa-header">
-    <h1 style="font-size:17px;font-weight:600"><i class="ti ti-briefcase"></i> Job Tracker</h1>
-    <div style="display:flex;gap:6px;align-items:center">
-      <span class="sync-dot ok" id="sync-dot-mob"></span>
-      <button class="btn primary" onclick="openJobModal(null)" style="font-size:12px;padding:5px 11px"><i class="ti ti-plus"></i> New</button>
-      <button class="btn" onclick="ghSync()" style="font-size:12px;padding:5px 9px" title="Sync now"><i class="ti ti-refresh"></i></button>
-    </div>
-  </div>
-
-  <!-- Sync bar (always visible) -->
-  <div class="sync-bar" id="sync-bar">
-    <span class="sync-dot ok" id="sync-dot-desk"></span>
-    <span id="sync-label">Inizializzazione…</span>
-    <span style="flex:1"></span>
-    <button class="btn" onclick="ghSync()" style="font-size:11px;padding:3px 8px"><i class="ti ti-refresh"></i> Sync</button>
-    <button class="btn" onclick="openGhSettings()" style="font-size:11px;padding:3px 8px" title="GitHub settings"><i class="ti ti-settings"></i></button>
-  </div>
-
-  <!-- Bottom tab bar (mobile) -->
-  <div class="bottom-tabs">
-    <button class="bottom-tab active" id="btab-pipeline" onclick="switchTabAll('pipeline',this)"><i class="ti ti-layout-list"></i>Pipeline</button>
-    <button class="bottom-tab" id="btab-cl" onclick="switchTabAll('cl',this)"><i class="ti ti-file-text"></i>CL</button>
-    <button class="bottom-tab" id="btab-cv" onclick="switchTabAll('cv',this)"><i class="ti ti-id"></i>CV</button>
-    <button class="bottom-tab" id="btab-appforms" onclick="switchTabAll('appforms',this)"><i class="ti ti-forms"></i>Forms</button>
-    <button class="bottom-tab" id="btab-other" onclick="switchTabAll('other',this)"><i class="ti ti-files"></i>Other</button>
-  </div>
-<div class="app">
-
-<div class="scroll-area">
-<div class="top-bar">
-  <h1><i class="ti ti-briefcase"></i> Job tracker</h1>
-  <div style="display:flex;gap:8px;flex-wrap:wrap">
-    <button class="btn primary" onclick="openJobModal(null)"><i class="ti ti-plus"></i> New application</button>
-    <button class="btn" onclick="exportData()"><i class="ti ti-download"></i> Export</button>
-    <label class="btn" style="cursor:pointer"><i class="ti ti-upload"></i> Import<input type="file" accept=".json" onchange="importData(event)" style="display:none"></label>
-  </div>
-</div>
-
-<div class="stats-row" id="stats-row"></div>
-
-<div class="tabs">
-  <button class="tab active" onclick="switchTab('pipeline',this)" data-tab="pipeline"><i class="ti ti-layout-list"></i> Pipeline</button>
-  <button class="tab" onclick="switchTab('cl',this)" data-tab="cl"><i class="ti ti-file-text"></i> Cover letters</button>
-  <button class="tab" onclick="switchTab('cv',this)" data-tab="cv"><i class="ti ti-id"></i> CVs</button>
-  <button class="tab" onclick="switchTab('appforms',this)" data-tab="appforms"><i class="ti ti-forms"></i> App forms</button>
-  <button class="tab" onclick="switchTab('other',this)" data-tab="other"><i class="ti ti-files"></i> Other docs</button>
-</div>
-
+.rem{display:inline-flex;align-items:center;gap:5px;font-size:12px;padding:4px 10px;border-radius:20px;font-weight:500;margin-top:8px}
+.rem.red{background:#fcebeb;color:#a32d2d}.rem.amber{background:#faeeda;color:#854f0b}.rem.grey{background:var(--bg2);color:var(--text2)}
+.ic{padding:2px 5px;border:none;background:none;color:var(--text3);cursor:pointer;font-size:14px}.ic:hover{color:var(--text)}
+.ic.del:hover{color:#a32d2d}
+</style></head><body>
+<div class="setup-overlay" id="setup" style="display:none"><div class="setup-box"><h2><i class="ti ti-cloud"></i> Sync e file</h2>
+<p>Inserisci la chiave anon di Supabase (Settings, API). Resta salvata solo su questo dispositivo.</p>
+<input id="setup-key" type="password" placeholder="eyJ..." autocomplete="off">
+<div style="display:flex;gap:8px;justify-content:flex-end"><button class="btn" onclick="$('setup').style.display='none'">Salta</button><button class="btn primary" onclick="saveKey('setup-key')">Salva e connetti</button></div></div></div>
+<div class="pwa-header"><h1 style="font-size:17px;font-weight:600"><i class="ti ti-briefcase"></i> Job Tracker</h1>
+<div style="display:flex;gap:6px;align-items:center"><span class="sync-dot ok" id="sd1"></span><button class="btn primary" onclick="jobModal()"><i class="ti ti-plus"></i> New</button><button class="btn" onclick="pull()"><i class="ti ti-refresh"></i></button></div></div>
+<div class="sync-bar"><span class="sync-dot ok" id="sd2"></span><span id="sl">Avvio…</span><span style="flex:1"></span>
+<button class="btn" style="font-size:11px;padding:3px 8px" onclick="pull()"><i class="ti ti-refresh"></i> Sync</button>
+<button class="btn" style="font-size:11px;padding:3px 8px" onclick="settings()"><i class="ti ti-settings"></i></button></div>
+<div class="bottom-tabs">
+<button class="bottom-tab active" data-tab="pipeline" onclick="tab('pipeline')"><i class="ti ti-layout-list"></i>Pipeline</button>
+<button class="bottom-tab" data-tab="CL" onclick="tab('CL')"><i class="ti ti-file-text"></i>CL</button>
+<button class="bottom-tab" data-tab="CV" onclick="tab('CV')"><i class="ti ti-id"></i>CV</button>
+<button class="bottom-tab" data-tab="APP" onclick="tab('APP')"><i class="ti ti-forms"></i>Forms</button>
+<button class="bottom-tab" data-tab="OTHER" onclick="tab('OTHER')"><i class="ti ti-files"></i>Supporting</button></div>
+<div class="app"><div class="scroll-area">
+<div class="top-bar"><h1><i class="ti ti-briefcase"></i> Job tracker</h1><div style="display:flex;gap:8px"><button class="btn primary" onclick="jobModal()"><i class="ti ti-plus"></i> New application</button><button class="btn" onclick="exportData()"><i class="ti ti-download"></i> Export</button><label class="btn" style="cursor:pointer"><i class="ti ti-upload"></i> Import<input type="file" accept=".json" onchange="importData(event)" style="display:none"></label></div></div>
+<div class="stats-row" id="stats"></div>
+<div class="tabs"><button class="tab active" data-tab="pipeline" onclick="tab('pipeline')"><i class="ti ti-layout-list"></i> Pipeline</button><button class="tab" data-tab="CL" onclick="tab('CL')"><i class="ti ti-file-text"></i> Cover letters</button><button class="tab" data-tab="CV" onclick="tab('CV')"><i class="ti ti-id"></i> CVs</button><button class="tab" data-tab="APP" onclick="tab('APP')"><i class="ti ti-forms"></i> App forms</button><button class="tab" data-tab="OTHER" onclick="tab('OTHER')"><i class="ti ti-files"></i> Supporting docs</button></div>
 <div id="tab-pipeline" class="section active">
-  <div class="filter-bar">
-    <button class="filter-chip active" onclick="setFilter('all',this)">All</button>
-    <button class="filter-chip" onclick="setFilter('Wishlist',this)">Wishlist</button>
-    <button class="filter-chip" onclick="setFilter('Applied',this)">Applied</button>
-    <button class="filter-chip" onclick="setFilter('Test/Assessment',this)">Test / Assessment</button>
-    <button class="filter-chip" onclick="setFilter('Interview',this)">Interview</button>
-    <button class="filter-chip" onclick="setFilter('Offer',this)">Offer</button>
-    <button class="filter-chip" onclick="setFilter('Rejected',this)">Rejected</button>
-  </div>
-  <div class="sort-bar">
-    <label>Sort by</label>
-    <select id="sort-select" onchange="renderPipeline()">
-      <option value="date-desc">Newest first</option>
-      <option value="date-asc">Oldest first</option>
-      <option value="alpha">Company A–Z</option>
-      <option value="status">Status</option>
-    </select>
-  </div>
-  <div id="pipeline-list"></div>
-</div>
-
-<div id="tab-cl" class="section">
-  <div class="lib-header">
-    <div class="lib-title" style="color:var(--cl)"><i class="ti ti-file-text"></i> Cover letters</div>
-    <div class="lib-controls">
-      <select id="cl-filter" onchange="renderLibTab('CL')"><option value="">All topics</option></select>
-      <button class="btn btn-cl" onclick="openDocModal('CL',null,null)"><i class="ti ti-plus"></i> New</button>
-    </div>
-  </div>
-  <div id="cl-content"></div>
-</div>
-
-<div id="tab-cv" class="section">
-  <div class="lib-header">
-    <div class="lib-title" style="color:var(--cv)"><i class="ti ti-id"></i> CVs</div>
-    <div class="lib-controls">
-      <select id="cv-filter" onchange="renderLibTab('CV')"><option value="">All profiles / specialisations</option></select>
-      <button class="btn btn-cv" onclick="openDocModal('CV',null,null)"><i class="ti ti-plus"></i> New</button>
-    </div>
-  </div>
-  <div id="cv-content"></div>
-</div>
-
-<div id="tab-appforms" class="section">
-  <div class="lib-header">
-    <div class="lib-title" style="color:var(--app)"><i class="ti ti-forms"></i> Application forms</div>
-    <button class="btn btn-app" onclick="openDocModal('APP',null,null)"><i class="ti ti-plus"></i> New</button>
-  </div>
-  <div id="appforms-content"></div>
-</div>
-
-<div id="tab-other" class="section">
-  <div class="lib-header">
-    <div class="lib-title" style="color:var(--other)"><i class="ti ti-files"></i> Other documents</div>
-    <button class="btn btn-other" onclick="openDocModal('OTHER',null,null)"><i class="ti ti-plus"></i> Add document</button>
-  </div>
-  <div id="other-content"></div>
-</div>
-
-</div>
-</div><!-- /scroll-area -->
+<div class="filter-bar" id="fbar"></div>
+<div class="sort-bar"><label>Sort by</label><select id="sort" onchange="renderPipeline()"><option value="date">Newest first</option><option value="fu">Follow-up date</option><option value="alpha">Company A-Z</option></select></div>
+<div id="pipeline-list"></div></div>
+<div id="tab-CL" class="section"></div><div id="tab-CV" class="section"></div><div id="tab-APP" class="section"></div><div id="tab-OTHER" class="section"></div>
+</div></div>
 <div id="modal-overlay" style="display:none"></div>
-
+<input type="file" id="rep" style="display:none" accept=".pdf,.doc,.docx,.jpg,.jpeg,.png" onchange="repPicked(this)">
 <script>
-// ── STATE ──
-const SK='jt_v6';
-let state={jobs:[],docs:[]};
-let currentFilter='all';
-let editingId=null;
-// per-docblock topic state: keyed by block id
-let blockTopics={};
-
-// ── TOPIC PRESETS ──
-const TP={
-  CL:['Policy','Stakeholder engagement','Project management','Procurement',
-      'Evaluation & monitoring','Communications','Data & knowledge management',
-      'Finance & budget','Research & innovation','Maritime governance',
-      'Energy & climate','Digital transformation','EU funding & grants','General'],
-  CV:['EU Consultant','Programme Manager','Policy Analyst',
-      'Project Manager (PRINCE2)','Data & Knowledge Mgmt (CDMP)',
-      'EU Official / Institution','Senior Manager','Maritime & Blue Economy',
-      'Energy & Climate','Digital & Data'],
-  APP:['European Commission','EU Agency','European Parliament',
-       'Council of the EU','OECD / International org','Private sector','NGO / Think tank'],
-  OTHER:[]
-};
-
-function tcls(t){let h=0;for(let i=0;i<t.length;i++)h=(h*31+t.charCodeAt(i))&0xffff;return 'tag-'+(h%10);}
-function tbadge(t){return `<span class="tag ${tcls(t)}">${esc(t)}</span>`;}
-function tbadges(arr){return(arr||[]).map(tbadge).join('');}
-
-// ── PERSIST ──
-function load(){
-  try{const s=localStorage.getItem(SK);if(s){const p=JSON.parse(s);state.jobs=p.jobs||[];state.docs=p.docs||[];}}catch(e){}
-  state.docs=state.docs.map(d=>({topics:[],description:'',...d,type:['CL','CV','APP','OTHER'].includes(d.type)?d.type:'CL'}));
-  refreshTopicFilters();render();
-}
-function save(){try{localStorage.setItem(SK,JSON.stringify(state));}catch(e){}}
-function uid(){return 'x'+Math.random().toString(36).slice(2,9)}
-function exportData(){const b=new Blob([JSON.stringify(state,null,2)],{type:'application/json'});const a=document.createElement('a');a.href=URL.createObjectURL(b);a.download='job-tracker.json';a.click();}
-function importData(e){
-  const f=e.target.files[0];if(!f)return;
-  const r=new FileReader();r.onload=ev=>{
-    try{const p=JSON.parse(ev.target.result);state.jobs=p.jobs||[];state.docs=p.docs||[];
-      state.docs=state.docs.map(d=>({topics:[],description:'',...d}));
-      save();refreshTopicFilters();render();alert('Import OK!');}catch{alert('Invalid file.');}
-  };r.readAsText(f);
-}
-
-function refreshTopicFilters(){
-  ['CL','CV'].forEach(type=>{
-    const sel=document.getElementById(type.toLowerCase()+'-filter');if(!sel)return;
-    const prev=sel.value;
-    sel.innerHTML=`<option value="">All ${type==='CL'?'topics':'profiles / specialisations'}</option>`;
-    const used=new Set();
-    state.docs.filter(d=>d.type===type).forEach(d=>(d.topics||[]).forEach(t=>used.add(t)));
-    [...used].sort().forEach(t=>{const o=document.createElement('option');o.value=t;o.textContent=t;sel.appendChild(o);});
-    sel.value=prev;
-  });
-}
-
-// ── HELPERS ──
-function esc(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
-function fmtDate(d){if(!d)return '';return new Date(d+'T00:00:00').toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'});}
-function sbadge(s){const m={Applied:'applied',Interview:'interview',Offer:'offer',Rejected:'rejected',Wishlist:'wishlist','Test/Assessment':'test'};return `<span class="badge badge-${m[s]||'wishlist'}">${s}</span>`;}
-function ticon(t){return{CL:'file-text',CV:'id',APP:'forms',OTHER:'files'}[t]||'file';}
-function tlabel(t){return{CL:'Cover letter',CV:'CV',APP:'App form',OTHER:'Document'}[t]||t;}
-function tcolor(t){return{CL:'var(--cl)',CV:'var(--cv)',APP:'var(--app)',OTHER:'var(--other)'}[t]||'var(--text)';}
-function tcibg(t){return{CL:'ci-cl',CV:'ci-cv',APP:'ci-app',OTHER:'ci-other'}[t]||'ci-other';}
-
-// ── RENDER ──
-function render(){renderStats();renderPipeline();['CL','CV','APP','OTHER'].forEach(renderLibTab);}
-
-function renderStats(){
-  const t=state.jobs.length,act=state.jobs.filter(j=>j.status!=='Rejected').length,
-    iv=state.jobs.filter(j=>j.status==='Interview').length,of=state.jobs.filter(j=>j.status==='Offer').length;
-  document.getElementById('stats-row').innerHTML=`
-    <div class="stat-card"><div class="label">Applications</div><div class="value">${t}</div></div>
-    <div class="stat-card"><div class="label">Active</div><div class="value">${act}</div></div>
-    <div class="stat-card"><div class="label">Interviews</div><div class="value">${iv}</div></div>
-    <div class="stat-card"><div class="label">Offers</div><div class="value">${of}</div></div>
-    <div class="stat-card"><div class="label">Cover letters</div><div class="value">${state.docs.filter(d=>d.type==='CL').length}</div></div>
-    <div class="stat-card"><div class="label">CVs</div><div class="value">${state.docs.filter(d=>d.type==='CV').length}</div></div>
-    <div class="stat-card"><div class="label">App forms</div><div class="value">${state.docs.filter(d=>d.type==='APP').length}</div></div>`;
-}
-
-function setFilter(f,el){currentFilter=f;document.querySelectorAll('.filter-chip').forEach(c=>c.classList.remove('active'));el.classList.add('active');renderPipeline();}
-
-function renderPipeline(){
-  const sort=document.getElementById('sort-select')?.value||'date-desc';
-  let jobs=[...state.jobs];
-  if(currentFilter!=='all')jobs=jobs.filter(j=>j.status===currentFilter);
-  if(sort==='date-desc')jobs.sort((a,b)=>b.date.localeCompare(a.date));
-  else if(sort==='date-asc')jobs.sort((a,b)=>a.date.localeCompare(b.date));
-  else if(sort==='alpha')jobs.sort((a,b)=>a.org.localeCompare(b.org));
-  else jobs.sort((a,b)=>{const o=['Offer','Interview','Test/Assessment','Applied','Wishlist','Rejected'];return o.indexOf(a.status)-o.indexOf(b.status);});
-  const el=document.getElementById('pipeline-list');
-  if(!jobs.length){el.innerHTML=`<div class="empty-state"><div class="icon"><i class="ti ti-briefcase-off"></i></div><p>No applications yet.<br>Click "New application" to start.</p></div>`;return;}
-  el.innerHTML=jobs.map(jobCard).join('');
-}
-
-function jobCard(j){
-  const linked=state.docs.filter(d=>d.linkedJob===j.id);
-  const types=['CL','CV','APP','OTHER'];
-  const typeNames={CL:'Cover letters',CV:'CVs',APP:'App forms',OTHER:'Other docs'};
-  let docSections='';
-  types.forEach(type=>{
-    const docs=linked.filter(d=>d.type===type);
-    if(!docs.length)return;
-    const chips=docs.map(d=>`<div class="doc-chip" onclick="viewDoc('${d.id}')">
-      <div class="ci ${tcibg(type)}"><i class="ti ti-${ticon(type)}"></i></div>
-      <span class="chip-name">${esc(d.name)}</span>
-      <button class="btn" style="padding:1px 4px;border:none;background:none;color:var(--text3);flex-shrink:0" onclick="event.stopPropagation();openDocModal('${type}',null,state.docs.find(x=>x.id==='${d.id}'))" title="Edit"><i class="ti ti-edit" style="font-size:11px"></i></button>
-    </div>`).join('');
-    docSections+=`<div class="job-docs-type-row"><div class="job-docs-type-label" style="color:${tcolor(type)}"><i class="ti ti-${ticon(type)}"></i>${typeNames[type]}</div><div class="doc-chips">${chips}</div></div>`;
-  });
-
-  const deadline=j.deadline?`<span><i class="ti ti-calendar-due"></i>Deadline ${fmtDate(j.deadline)}</span>`:'';
-  const followUp=j.followUp
-    ?`<div style="display:flex;align-items:flex-start;gap:8px;margin-top:8px;padding:7px 11px;background:#fdf3e0;border-radius:var(--radius);border:0.5px solid #f0d9a0">
-        <i class="ti ti-bell" style="color:#8a5a00;flex-shrink:0;margin-top:1px"></i>
-        <div style="flex:1;min-width:0;font-size:12px;color:#6b4400">
-          <span style="font-weight:600">Follow-up</span>${j.followUpDate?' · <b>'+fmtDate(j.followUpDate)+'</b>':''}${j.followUpContact?' · '+esc(j.followUpContact):''}
-          ${j.followUpNote?`<div style="margin-top:2px;color:#8a5a00">${esc(j.followUpNote)}</div>`:''}
-        </div>
-        <button class="btn" style="padding:2px 8px;font-size:11px;border-color:#f0d9a0;color:#8a5a00;flex-shrink:0" onclick="openFollowUpModal('${j.id}')"><i class="ti ti-edit"></i></button>
-      </div>`
-    :`<div style="margin-top:8px">
-        <button class="btn" style="font-size:12px;color:var(--text3);border-style:dashed;padding:4px 10px" onclick="openFollowUpModal('${j.id}')"><i class="ti ti-bell-plus"></i> Add follow-up reminder</button>
-      </div>`;
-  return `<div class="card">
-    <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:10px">
-      <div><div class="job-title">${esc(j.title)}</div><div class="job-org">${esc(j.org)}${j.location?' · '+esc(j.location):''}</div></div>
-      ${sbadge(j.status)}
-    </div>
-    <div class="job-meta">
-      <span><i class="ti ti-calendar"></i>${fmtDate(j.date)}</span>
-      ${deadline}
-      ${j.url?`<a href="${esc(j.url)}" target="_blank"><i class="ti ti-external-link"></i>Job post</a>`:''}
-    </div>
-    ${j.notes?`<div style="font-size:12px;color:var(--text2);margin-top:8px;padding:7px 10px;background:var(--bg2);border-radius:var(--radius);line-height:1.55">${esc(j.notes)}</div>`:''}
-    ${followUp}
-    <div class="job-docs-section">
-      ${docSections||'<div style="font-size:12px;color:var(--text3);margin-bottom:6px">No documents linked yet</div>'}
-      <div class="doc-add-row">
-        <button class="btn btn-cl" onclick="openDocModal('CL','${j.id}',null)"><i class="ti ti-plus"></i> Cover letter</button>
-        <button class="btn btn-cv" onclick="openCvPicker('${j.id}')"><i class="ti ti-plus"></i> CV</button>
-        <button class="btn btn-app" onclick="openDocModal('APP','${j.id}',null)"><i class="ti ti-plus"></i> App form</button>
-        <button class="btn btn-other" onclick="openDocModal('OTHER','${j.id}',null)"><i class="ti ti-plus"></i> Other</button>
-      </div>
-    </div>
-    <div class="job-actions">
-      <button class="btn" onclick="openJobModal(state.jobs.find(x=>x.id==='${j.id}'))"><i class="ti ti-edit"></i> Edit</button>
-      <button class="btn" onclick="openStatusModal('${j.id}')"><i class="ti ti-refresh"></i> Status</button>
-      <button class="btn" style="background:#fcebeb;color:#a32d2d;border-color:#f7c1c1;font-weight:500" onclick="if(confirm('Delete this application and all linked documents?'))deleteJob('${j.id}')"><i class="ti ti-trash"></i> Delete</button>
-    </div>
-  </div>`;
-}
-
-function renderLibTab(type){
-  const ids={CL:'cl-content',CV:'cv-content',APP:'appforms-content',OTHER:'other-content'};
-  const el=document.getElementById(ids[type]);if(!el)return;
-  const fid={CL:'cl-filter',CV:'cv-filter'}[type];
-  const tf=fid?document.getElementById(fid)?.value:'';
-  let docs=state.docs.filter(d=>d.type===type);
-  if(tf)docs=docs.filter(d=>(d.topics||[]).includes(tf));
-  const labels={CL:'cover letters',CV:'CVs',APP:'application forms',OTHER:'other documents'};
-  if(!docs.length){el.innerHTML=`<div class="empty-state"><div class="icon"><i class="ti ti-${ticon(type)}"></i></div><p>No ${labels[type]} yet.</p></div>`;return;}
-  if(type==='APP'||type==='OTHER'){el.innerHTML=`<div class="lib-grid">${docs.map(libCard).join('')}</div>`;return;}
-  // group by topic
-  const grouped={};const noTopic=[];
-  docs.forEach(d=>{if(!(d.topics&&d.topics.length)){noTopic.push(d);return;}d.topics.forEach(t=>{if(!grouped[t])grouped[t]=[];grouped[t].push(d);});});
-  let html='';
-  Object.keys(grouped).sort().forEach(t=>{
-    const uniq=[...new Map(grouped[t].map(d=>[d.id,d])).values()];
-    html+=`<div class="topic-group"><div class="topic-group-title">${tbadge(t)}<span class="count">${uniq.length} doc${uniq.length>1?'s':''}</span></div><div class="lib-grid">${uniq.map(libCard).join('')}</div></div>`;
-  });
-  if(noTopic.length)html+=`<div class="topic-group"><div class="topic-group-title" style="color:var(--text3)"><i class="ti ti-tag-off"></i> No ${type==='CV'?'profile':'topic'} assigned</div><div class="lib-grid">${noTopic.map(libCard).join('')}</div></div>`;
-  el.innerHTML=html;
-}
-
-function libCard(d){
-  const job=state.jobs.find(j=>j.id===d.linkedJob);
-  const profileLabel=d.type==='CV'?'Profile / specialisation':'Topics';
-  return `<div class="lib-card">
-    <div class="lib-card-header">
-      <div class="lib-card-icon ${d.type.toLowerCase()}"><i class="ti ti-${ticon(d.type)}"></i></div>
-      <div style="flex:1;min-width:0"><div class="lib-card-name">${esc(d.name)}</div><div class="lib-card-sub">${fmtDate(d.date)}</div></div>
-    </div>
-    ${(d.topics||[]).length?`<div style="font-size:10px;color:var(--text3);margin-bottom:2px;text-transform:uppercase;letter-spacing:.3px;font-weight:600">${profileLabel}</div><div class="lib-card-tags">${tbadges(d.topics)}</div>`:''}
-    ${d.description?`<div class="lib-card-desc">${esc(d.description)}</div>`:''}
-    ${job?`<div class="lib-card-linked"><i class="ti ti-link"></i>${esc(job.org)}</div>`:''}
-    <div class="lib-card-footer">
-      <button class="btn" onclick="viewDoc('${d.id}')"><i class="ti ti-eye"></i> View</button>
-      <button class="btn" onclick="openDocModal('${d.type}',null,state.docs.find(x=>x.id==='${d.id}'))"><i class="ti ti-edit"></i> Edit</button>
-      <button class="btn" onclick="copyDoc('${d.id}')"><i class="ti ti-copy"></i> Copy</button>
-      <button class="btn danger" onclick="deleteDoc('${d.id}')"><i class="ti ti-trash"></i> Delete</button>
-    </div>
-  </div>`;
-}
-
-function switchTab(t,el){
-  document.querySelectorAll('.tab').forEach(b=>b.classList.remove('active'));
-  document.querySelectorAll('.section').forEach(s=>s.classList.remove('active'));
-  el.classList.add('active');document.getElementById('tab-'+t).classList.add('active');
-}
-
-// ── JOB MODAL (with integrated doc upload) ──
-function openJobModal(data){
-  const j=data||{title:'',org:'',location:'',status:'Applied',date:new Date().toISOString().slice(0,10),deadline:'',url:'',notes:''};
-  editingId=data?data.id:null;
-  blockTopics={};
-  // linked docs for existing job
-  const linked=editingId?state.docs.filter(d=>d.linkedJob===editingId):[];
-  const docTypes=['CL','CV','APP','OTHER'];
-  const docTypeNames={CL:'Cover letter',CV:'CV / Résumé',APP:'Application form',OTHER:'Other document'};
-  const docTypeBtnClass={CL:'btn-cl',CV:'btn-cv',APP:'btn-app',OTHER:'btn-other'};
-
-  let docBlocksHtml='';
-  docTypes.forEach(type=>{
-    const existing=linked.filter(d=>d.type===type);
-    const hasTopic=type==='CL'||type==='CV';
-    existing.forEach((d,i)=>{
-      const bid=`existing-${d.id}`;
-      blockTopics[bid]=[...(d.topics||[])];
-      docBlocksHtml+=docBlock(bid,type,docTypeNames[type],d.name,d.description||'',hasTopic,type,d.content||'');
-    });
-  });
-
-  _show(`<div class="modal-bg" onclick="if(event.target===this)closeModal()"><div class="modal xl">
-    <h2><i class="ti ti-briefcase"></i>${editingId?'Edit':'New'} application</h2>
-    <div class="field-row">
-      <div class="field"><label>Job title</label><input id="f-title" value="${esc(j.title)}" placeholder="Policy Officer"></div>
-      <div class="field"><label>Organisation</label><input id="f-org" value="${esc(j.org)}" placeholder="DG REFORM"></div>
-    </div>
-    <div class="field-row">
-      <div class="field"><label>Location</label><input id="f-loc" value="${esc(j.location||'')}"></div>
-      <div class="field"><label>Status</label><select id="f-status">
-        ${['Wishlist','Applied','Test/Assessment','Interview','Offer','Rejected'].map(s=>`<option${s===j.status?' selected':''}>${s}</option>`).join('')}
-      </select></div>
-    </div>
-    <div class="field-row">
-      <div class="field"><label>Date applied</label><input type="date" id="f-date" value="${j.date}"></div>
-      <div class="field"><label>Deadline</label><input type="date" id="f-deadline" value="${j.deadline||''}"></div>
-    </div>
-    <div class="field"><label>Job post URL</label><input id="f-url" value="${esc(j.url||'')}" placeholder="https://…"></div>
-    <div class="field"><label>Notes</label><textarea id="f-notes" style="min-height:60px">${esc(j.notes||'')}</textarea></div>
-
-    <div class="modal-divider"><i class="ti ti-paperclip"></i> Documents</div>
-    <div id="job-doc-blocks">${docBlocksHtml}</div>
-    <div style="display:flex;gap:7px;flex-wrap:wrap;margin-bottom:.5rem">
-      <button class="btn btn-cl" onclick="addDocBlock('CL')"><i class="ti ti-plus"></i> Cover letter</button>
-      <button class="btn btn-cv" onclick="addDocBlock('CV')"><i class="ti ti-plus"></i> CV</button>
-      <button class="btn btn-app" onclick="addDocBlock('APP')"><i class="ti ti-plus"></i> App form</button>
-      <button class="btn btn-other" onclick="addDocBlock('OTHER')"><i class="ti ti-plus"></i> Other doc</button>
-    </div>
-    ${editingId?`<div style="font-size:11px;color:var(--text3);margin-bottom:.5rem">Documents previously linked to this application are shown above.</div>`:''}
-
-    <div class="modal-actions">
-      <button class="btn" onclick="closeModal()">Cancel</button>
-      <button class="btn primary" onclick="saveJobWithDocs()">Save</button>
-    </div>
-  </div></div>`);
-
-  // init topic inputs for existing blocks
-  Object.keys(blockTopics).forEach(bid=>{
-    const type=document.getElementById('block-'+bid)?.dataset.doctype;
-    if(type)initBlockTopics(bid,type);
-  });
-}
-
-let _blockCounter=0;
-function addDocBlock(type){
-  const bid='b'+(++_blockCounter);
-  blockTopics[bid]=[];
-  const hasTopic=type==='CL'||type==='CV';
-  const names={CL:'Cover letter',CV:'CV / Résumé',APP:'Application form',OTHER:'Other document'};
-  const container=document.getElementById('job-doc-blocks');
-  if(!container)return;
-  const div=document.createElement('div');
-  div.innerHTML=docBlock(bid,type,names[type],'','',hasTopic,type,'');
-  container.appendChild(div.firstElementChild);
-  initBlockTopics(bid,type);
-  document.getElementById('dbn-'+bid)?.focus();
-}
-
-function docBlock(bid,type,typeLabel,nameVal,descVal,hasTopic,topicType,contentVal){
-  const colors={CL:'var(--cl)',CV:'var(--cv)',APP:'var(--app)',OTHER:'var(--other)'};
-  const topicHtml=hasTopic?`
-    <div>
-      <div style="font-size:12px;color:var(--text2);font-weight:500;margin-bottom:5px">${type==='CV'?'Profile / specialisation':'Topics'}</div>
-      <div class="topic-wrap">
-        <input id="topic-inp-${bid}" autocomplete="off" placeholder="${type==='CV'?'e.g. EU Consultant, Programme Manager…':'e.g. Policy, Stakeholder engagement…'}"
-          style="width:100%;padding:7px 10px;font-size:12px;border:0.5px solid var(--border2);border-radius:var(--radius);background:var(--bg);color:var(--text);font-family:var(--font);outline:none">
-        <div class="topic-sug" id="topic-sug-${bid}"></div>
-      </div>
-      <div class="topic-chips" id="topic-chips-${bid}"></div>
-      <div style="font-size:11px;color:var(--text3);margin-top:3px">Type and press <kbd style="font-size:10px;padding:1px 4px;border:0.5px solid var(--border2);border-radius:3px;background:var(--bg)">Enter</kbd> to add — or pick from suggestions</div>
-    </div>`:'';
-
-  return `<div class="doc-block" id="block-${bid}" data-bid="${bid}" data-doctype="${type}">
-    <div class="doc-block-header">
-      <div class="doc-block-title" style="color:${colors[type]}"><i class="ti ti-${ticon(type)}"></i>${typeLabel}</div>
-      <div style="display:flex;gap:6px;align-items:center">
-        <button class="doc-block-toggle" onclick="toggleBlock('${bid}')"><i class="ti ti-chevron-up" id="btoggle-${bid}"></i></button>
-        <button class="btn danger" style="padding:3px 8px" onclick="removeBlock('${bid}')"><i class="ti ti-trash"></i></button>
-      </div>
-    </div>
-    <div class="doc-block-fields" id="bfields-${bid}">
-      <div>
-        <div style="font-size:12px;color:var(--text2);font-weight:500;margin-bottom:5px">Name</div>
-        <input id="dbn-${bid}" value="${esc(nameVal)}" placeholder="${type==='CL'?'Cover letter – Frontex AD6':type==='CV'?'CV – EU Consultant profile':type==='APP'?'Application form – Frontex':'Document name'}" style="width:100%;padding:7px 10px;font-size:13px;border:0.5px solid var(--border2);border-radius:var(--radius);background:var(--bg);color:var(--text);font-family:var(--font);outline:none">
-      </div>
-      ${hasTopic?topicHtml:''}
-      <div>
-        <div style="font-size:12px;color:var(--text2);font-weight:500;margin-bottom:5px">Description <span style="font-weight:400;color:var(--text3)">(optional)</span></div>
-        <input id="dbd-${bid}" value="${esc(descVal)}" placeholder="Brief note about this version…" style="width:100%;padding:7px 10px;font-size:12px;border:0.5px solid var(--border2);border-radius:var(--radius);background:var(--bg);color:var(--text);font-family:var(--font);outline:none">
-      </div>
-      <div>
-        <div style="font-size:12px;color:var(--text2);font-weight:500;margin-bottom:5px">Upload file <span style="font-weight:400;color:var(--text3)">(.docx .pdf .txt)</span></div>
-        <div class="drop-zone" ondragover="event.preventDefault();this.classList.add('drag-over')" ondragleave="this.classList.remove('drag-over')"
-          ondrop="event.preventDefault();this.classList.remove('drag-over');handleFileDrop(event.dataTransfer.files[0],'${bid}')">
-          <input type="file" accept=".docx,.pdf,.txt" onchange="handleFileDrop(this.files[0],'${bid}')">
-          <div class="dz-row"><div class="dz-icon"><i class="ti ti-cloud-upload"></i></div><div><div class="dz-label">Drop file or click to browse</div><div class="dz-sub">.docx · .pdf · .txt — max 10 MB</div></div></div>
-        </div>
-        <div class="upload-status" id="us-${bid}"></div>
-      </div>
-      <textarea id="dbc-${bid}" style="display:none">${esc(contentVal)}</textarea>
-    </div>
-  </div>`;
-}
-
-function toggleBlock(bid){
-  const fields=document.getElementById('bfields-'+bid);
-  const icon=document.getElementById('btoggle-'+bid);
-  if(!fields)return;
-  const collapsed=fields.style.display==='none';
-  fields.style.display=collapsed?'':'none';
-  if(icon){icon.className=collapsed?'ti ti-chevron-up':'ti ti-chevron-down';}
-}
-
-function removeBlock(bid){
-  const el=document.getElementById('block-'+bid);if(el)el.remove();
-  delete blockTopics[bid];
-}
-
-// ── BLOCK TOPIC INPUT ──
-function initBlockTopics(bid,type){
-  _renderBlockChips(bid,type);
-  const inp=document.getElementById('topic-inp-'+bid);
-  if(!inp)return;
-  inp.oninput=()=>_showBlockSug(bid,type);
-  inp.onkeydown=e=>{
-    if(e.key==='Enter'){e.preventDefault();_addBlockTopic(bid,type);}
-    if(e.key==='Escape')_hideBlockSug(bid);
-  };
-}
-function _showBlockSug(bid,type){
-  const inp=document.getElementById('topic-inp-'+bid),box=document.getElementById('topic-sug-'+bid);
-  if(!inp||!box)return;
-  const q=inp.value.toLowerCase();
-  if(!q){box.classList.remove('open');return;} // only show when typing
-  const current=blockTopics[bid]||[];
-  const all=TP[type]||[];
-  const matches=all.filter(t=>t.toLowerCase().includes(q)&&!current.includes(t));
-  if(!matches.length){box.classList.remove('open');return;}
-  box.innerHTML=matches.map(t=>`<div class="topic-sug-item" onmousedown="event.preventDefault();_pickBlockTopic('${bid}','${esc(t)}','${type}')">${esc(t)}</div>`).join('');
-  box.classList.add('open');
-}
-function _hideBlockSug(bid){const b=document.getElementById('topic-sug-'+bid);if(b)b.classList.remove('open');}
-function _pickBlockTopic(bid,t,type){if(!blockTopics[bid])blockTopics[bid]=[];if(!blockTopics[bid].includes(t))blockTopics[bid].push(t);const inp=document.getElementById('topic-inp-'+bid);if(inp)inp.value='';_hideBlockSug(bid);_renderBlockChips(bid,type);}
-function _addBlockTopic(bid,type){const inp=document.getElementById('topic-inp-'+bid);if(!inp)return;const v=inp.value.trim();if(!blockTopics[bid])blockTopics[bid]=[];if(v&&!blockTopics[bid].includes(v))blockTopics[bid].push(v);inp.value='';_hideBlockSug(bid);_renderBlockChips(bid,type);}
-function _removeBlockTopic(bid,t,type){blockTopics[bid]=(blockTopics[bid]||[]).filter(x=>x!==t);_renderBlockChips(bid,type);}
-function _renderBlockChips(bid,type){
-  const el=document.getElementById('topic-chips-'+bid);if(!el)return;
-  el.innerHTML=(blockTopics[bid]||[]).map(t=>`<span class="topic-chip-wrap">${tbadge(t)}<button onclick="_removeBlockTopic('${bid}','${esc(t)}','${type}')"><i class="ti ti-x" style="font-size:11px"></i></button></span>`).join('');
-}
-
-// ── SAVE JOB + DOCS ──
-function saveJobWithDocs(){
-  const title=document.getElementById('f-title').value.trim();
-  const org=document.getElementById('f-org').value.trim();
-  if(!title||!org)return alert('Please fill in job title and organisation.');
-  const j={id:editingId||uid(),title,org,
-    location:document.getElementById('f-loc').value.trim(),
-    status:document.getElementById('f-status').value,
-    date:document.getElementById('f-date').value,
-    deadline:document.getElementById('f-deadline').value,
-    url:document.getElementById('f-url').value.trim(),
-    notes:document.getElementById('f-notes').value.trim()};
-  if(editingId){const i=state.jobs.findIndex(x=>x.id===editingId);if(i>=0)state.jobs[i]=j;}
-  else state.jobs.unshift(j);
-
-  // collect doc blocks
-  const blocks=document.querySelectorAll('#job-doc-blocks .doc-block');
-  // track which existing doc ids we've seen
-  const seenExistingIds=new Set();
-
-  blocks.forEach(block=>{
-    const bid=block.dataset.bid;
-    const dtype=block.dataset.doctype;
-    const name=(document.getElementById('dbn-'+bid)?.value||'').trim();
-    if(!name)return; // skip empty
-    const desc=document.getElementById('dbd-'+bid)?.value||'';
-    const content=document.getElementById('dbc-'+bid)?.value||'';
-    const topics=blockTopics[bid]||[];
-
-    if(bid.startsWith('existing-')){
-      // update existing doc
-      const docId=bid.replace('existing-','');
-      seenExistingIds.add(docId);
-      const i=state.docs.findIndex(x=>x.id===docId);
-      if(i>=0){state.docs[i]={...state.docs[i],name,description:desc,content,topics,linkedJob:j.id};}
-    }else{
-      // new doc
-      state.docs.unshift({id:uid(),type:dtype,name,description:desc,content,topics,linkedJob:j.id,date:j.date});
-    }
-  });
-
-  save();closeModal();refreshTopicFilters();render();
-}
-
-// ── STANDALONE DOC MODAL ──
-function openDocModal(docType,linkedJobId,existingDoc){
-  const d=existingDoc||{type:docType,name:'',linkedJob:linkedJobId||'',date:new Date().toISOString().slice(0,10),content:'',topics:[],description:''};
-  editingId=existingDoc?existingDoc.id:null;
-  blockTopics={main:[...(d.topics||[])]};
-  const jobOpts=state.jobs.map(j=>`<option value="${j.id}"${j.id===(d.linkedJob||linkedJobId)?' selected':''}>${esc(j.org)} – ${esc(j.title)}</option>`).join('');
-  const hasTopic=docType==='CL'||docType==='CV';
-  const names={CL:'Cover letter',CV:'CV / Résumé',APP:'Application form',OTHER:'Other document'};
-  const topicLabel={CL:'Topics',CV:'Profile / specialisation',APP:'Institution type',OTHER:'Tags'}[docType]||'Topics';
-
-  _show(`<div class="modal-bg" onclick="if(event.target===this)closeModal()"><div class="modal">
-    <h2><span class="lib-card-icon ${docType.toLowerCase()}" style="width:26px;height:26px;font-size:13px;border-radius:6px"><i class="ti ti-${ticon(docType)}"></i></span>
-      <span style="color:${tcolor(docType)}">${editingId?'Edit':'New'} ${names[docType]}</span>
-    </h2>
-    <div class="field"><label>Name</label><input id="d-name" value="${esc(d.name)}" placeholder="${names[docType]}"></div>
-    <div class="field"><label>Description <span style="font-weight:400;color:var(--text3)">(optional)</span></label>
-      <input id="d-desc" value="${esc(d.description||'')}"></div>
-    ${hasTopic||docType==='APP'||docType==='OTHER'?`<div class="field">
-      <label>${topicLabel}</label>
-      <div class="topic-wrap">
-        <input id="topic-inp-main" autocomplete="off" placeholder="${docType==='CV'?'e.g. EU Consultant, Programme Manager…':'e.g. Policy, Stakeholder engagement…'}"
-          style="width:100%;padding:8px 10px;font-size:13px;border:0.5px solid var(--border2);border-radius:var(--radius);background:var(--bg);color:var(--text);font-family:var(--font);outline:none">
-        <div class="topic-sug" id="topic-sug-main"></div>
-      </div>
-      <div class="topic-chips" id="topic-chips-main"></div>
-      <div style="font-size:11px;color:var(--text3);margin-top:4px">Type and press <kbd style="font-size:10px;padding:1px 5px;border:0.5px solid var(--border2);border-radius:3px;background:var(--bg2)">Enter</kbd> to add — or pick from suggestions</div>
-    </div>`:''}
-    <div class="field"><label>Linked application</label>
-      <select id="d-job"><option value="">— None —</option>${jobOpts}</select></div>
-    <div class="field"><label>Date</label><input type="date" id="d-date" value="${d.date}"></div>
-    <div class="field">
-      <label>Upload file <span style="font-weight:400;color:var(--text3)">(.docx .pdf .txt)</span></label>
-      <div class="drop-zone" ondragover="event.preventDefault();this.classList.add('drag-over')" ondragleave="this.classList.remove('drag-over')"
-        ondrop="event.preventDefault();this.classList.remove('drag-over');handleFileDrop(event.dataTransfer.files[0],'main')">
-        <input type="file" accept=".docx,.pdf,.txt" onchange="handleFileDrop(this.files[0],'main')">
-        <div class="dz-row"><div class="dz-icon"><i class="ti ti-cloud-upload"></i></div><div><div class="dz-label">Drop file or click to browse</div><div class="dz-sub">.docx · .pdf · .txt — max 10 MB</div></div></div>
-      </div>
-      <div class="upload-status" id="us-main"></div>
-    </div>
-    <textarea id="d-content" style="display:none">${esc(d.content||'')}</textarea>
-    <div class="modal-actions">
-      <button class="btn" onclick="closeModal()">Cancel</button>
-      <button class="btn primary" onclick="saveStandaloneDoc('${docType}')">Save</button>
-    </div>
-  </div></div>`);
-  initBlockTopics('main',docType);
-}
-
-function saveStandaloneDoc(docType){
-  const name=document.getElementById('d-name').value.trim();
-  if(!name)return alert('Please enter a name.');
-  const d={id:editingId||uid(),type:docType,name,
-    description:document.getElementById('d-desc')?.value.trim()||'',
-    topics:blockTopics['main']||[],
-    linkedJob:document.getElementById('d-job').value,
-    date:document.getElementById('d-date').value,
-    content:document.getElementById('d-content').value};
-  if(editingId){const i=state.docs.findIndex(x=>x.id===editingId);if(i>=0)state.docs[i]=d;}
-  else state.docs.unshift(d);
-  save();closeModal();refreshTopicFilters();render();
-}
-
-// ── CV PICKER ──
-function openCvPicker(jobId){
-  const cvs=state.docs.filter(d=>d.type==='CV');
-  const linked=state.docs.filter(d=>d.type==='CV'&&d.linkedJob===jobId).map(d=>d.id);
-  const items=cvs.length?cvs.map(d=>`
-    <div class="cv-pick-item${linked.includes(d.id)?' sel':''}" id="cvpi-${d.id}" onclick="toggleCvLink('${d.id}','${jobId}')">
-      <div class="lib-card-icon cv" style="width:28px;height:28px;font-size:13px;flex-shrink:0"><i class="ti ti-id"></i></div>
-      <div style="flex:1;min-width:0">
-        <div style="font-size:13px;font-weight:500;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(d.name)}</div>
-        <div style="font-size:11px;color:var(--text2);margin-top:2px">${tbadges(d.topics)} ${fmtDate(d.date)}</div>
-      </div>
-      <i class="ti ti-check" style="color:var(--cv);display:${linked.includes(d.id)?'block':'none'}" id="cvchk-${d.id}"></i>
-    </div>`).join('')
-    :`<div style="font-size:13px;color:var(--text2);padding:.75rem 0">No CVs saved yet.</div>`;
-  _show(`<div class="modal-bg" onclick="if(event.target===this)closeModal()"><div class="modal">
-    <h2><i class="ti ti-id" style="color:var(--cv)"></i> Add CV to application</h2>
-    ${cvs.length?`<div style="font-size:12px;color:var(--text2);margin-bottom:.75rem">Click to link or unlink an existing CV:</div>
-    <div class="cv-pick-list">${items}</div>
-    <div style="font-size:12px;color:var(--text2);margin-top:1rem;margin-bottom:.4rem;font-weight:600">Or create a new CV:</div>`:''}
-    <div class="modal-actions" style="margin-top:.5rem;padding-top:.5rem">
-      <button class="btn" onclick="closeModal()">Done</button>
-      <button class="btn btn-cv" onclick="closeModal();openDocModal('CV','${jobId}',null)"><i class="ti ti-plus"></i> New CV</button>
-    </div>
-  </div></div>`);
-}
-function toggleCvLink(cvId,jobId){
-  const d=state.docs.find(x=>x.id===cvId);if(!d)return;
-  const linked=d.linkedJob===jobId;
-  d.linkedJob=linked?'':jobId;
-  document.getElementById('cvpi-'+cvId)?.classList.toggle('sel',!linked);
-  const chk=document.getElementById('cvchk-'+cvId);if(chk)chk.style.display=linked?'none':'block';
-  save();renderPipeline();
-}
-
-// ── VIEW DOC ──
-function viewDoc(id){
-  const d=state.docs.find(x=>x.id===id);if(!d)return;
-  const job=state.jobs.find(j=>j.id===d.linkedJob);
-  _show(`<div class="modal-bg" onclick="if(event.target===this)closeModal()"><div class="modal xl">
-    <h2><span class="lib-card-icon ${d.type.toLowerCase()}" style="width:26px;height:26px;font-size:13px;border-radius:6px"><i class="ti ti-${ticon(d.type)}"></i></span>${esc(d.name)}</h2>
-    ${(d.topics||[]).length?`<div style="display:flex;gap:4px;flex-wrap:wrap;margin-bottom:10px">${tbadges(d.topics)}</div>`:''}
-    ${d.description?`<div style="font-size:12px;color:var(--text2);margin-bottom:8px">${esc(d.description)}</div>`:''}
-    ${job?`<div style="font-size:11px;color:var(--text3);margin-bottom:8px;display:flex;align-items:center;gap:4px"><i class="ti ti-link"></i>${esc(job.org)}</div>`:''}
-    <div style="font-size:13px;line-height:1.7;white-space:pre-wrap;max-height:440px;overflow-y:auto;padding:1rem;background:var(--bg2);border-radius:var(--radius);border:0.5px solid var(--border)">${esc(d.content||'(no content stored)')}</div>
-    <div class="modal-actions">
-      <button class="btn" onclick="copyDoc('${d.id}')"><i class="ti ti-copy"></i> Copy</button>
-      <button class="btn" onclick="closeModal();openDocModal('${d.type}',null,state.docs.find(x=>x.id==='${d.id}'))"><i class="ti ti-edit"></i> Edit</button>
-      <button class="btn primary" onclick="closeModal()">Close</button>
-    </div>
-  </div></div>`);
-}
-
-function openStatusModal(id){
-  const j=state.jobs.find(x=>x.id===id);if(!j)return;editingId=id;
-  _show(`<div class="modal-bg" onclick="if(event.target===this)closeModal()"><div class="modal">
-    <h2>Update status</h2>
-    <div style="font-size:13px;color:var(--text2);margin-bottom:1rem">${esc(j.org)} – ${esc(j.title)}</div>
-    <div class="field"><label>New status</label><select id="s-status">
-      ${['Wishlist','Applied','Test/Assessment','Interview','Offer','Rejected'].map(s=>`<option${s===j.status?' selected':''}>${s}</option>`).join('')}
-    </select></div>
-    <div class="modal-actions">
-      <button class="btn" onclick="closeModal()">Cancel</button>
-      <button class="btn primary" onclick="applyStatus()">Update</button>
-    </div>
-  </div></div>`);
-}
-function applyStatus(){
-  const i=state.jobs.findIndex(x=>x.id===editingId);
-  if(i>=0)state.jobs[i].status=document.getElementById('s-status').value;
-  save();closeModal();render();
-}
-
-// ── FOLLOW-UP MODAL ──
-function openFollowUpModal(jobId){
-  const j=state.jobs.find(x=>x.id===jobId);if(!j)return;
-  editingId=jobId;
-  _show(`<div class="modal-bg" onclick="if(event.target===this)closeModal()"><div class="modal">
-    <h2><i class="ti ti-bell" style="color:#8a5a00"></i> Follow-up reminder</h2>
-    <div style="font-size:13px;color:var(--text2);margin-bottom:1rem">${esc(j.org)} – ${esc(j.title)}</div>
-    <div class="field"><label>Follow-up date</label><input type="date" id="fu-date" value="${j.followUpDate||''}"></div>
-    <div class="field"><label>Contact person <span style="font-weight:400;color:var(--text3)">(name, email or both)</span></label>
-      <input id="fu-contact" value="${esc(j.followUpContact||'')}" placeholder="e.g. Jane Smith · jane@ec.europa.eu"></div>
-    <div class="field"><label>Note</label>
-      <textarea id="fu-note" style="min-height:70px">${esc(j.followUpNote||'')}</textarea></div>
-    <div class="modal-actions">
-      ${j.followUp?`<button class="btn danger" onclick="clearFollowUp('${jobId}')"><i class="ti ti-bell-off"></i> Remove</button>`:''}
-      <button class="btn" onclick="closeModal()">Cancel</button>
-      <button class="btn primary" onclick="saveFollowUp('${jobId}')">Save</button>
-    </div>
-  </div></div>`);
-}
-function saveFollowUp(jobId){
-  const i=state.jobs.findIndex(x=>x.id===jobId);if(i<0)return;
-  state.jobs[i].followUp=true;
-  state.jobs[i].followUpDate=document.getElementById('fu-date').value;
-  state.jobs[i].followUpContact=document.getElementById('fu-contact').value.trim();
-  state.jobs[i].followUpNote=document.getElementById('fu-note').value.trim();
-  save();closeModal();renderPipeline();
-}
-function clearFollowUp(jobId){
-  const i=state.jobs.findIndex(x=>x.id===jobId);if(i<0)return;
-  state.jobs[i].followUp=false;
-  state.jobs[i].followUpDate='';state.jobs[i].followUpContact='';state.jobs[i].followUpNote='';
-  save();closeModal();renderPipeline();
-}
-
-function _show(html){const ov=document.getElementById('modal-overlay');ov.innerHTML=html;ov.style.display='block';}
-function closeModal(){const ov=document.getElementById('modal-overlay');ov.style.display='none';ov.innerHTML='';editingId=null;blockTopics={};}
-function copyDoc(id){const d=state.docs.find(x=>x.id===id);if(!d)return;navigator.clipboard.writeText(d.content||'').then(()=>alert('Copied!')).catch(()=>alert('Could not copy.'));}
-function deleteJob(id){if(confirm('Delete this application?')){state.jobs=state.jobs.filter(x=>x.id!==id);save();render();}}
-function deleteDoc(id){if(confirm('Delete this document?')){state.docs=state.docs.filter(x=>x.id!==id);save();refreshTopicFilters();render();}}
-
-// ── FILE PARSING ──
-let _pdfjs=null;
-async function _getPdfJs(){
-  if(_pdfjs)return _pdfjs;
-  try{const m=await import('https://cdn.jsdelivr.net/npm/pdfjs-dist@4.4.168/build/pdf.min.mjs');m.GlobalWorkerOptions.workerSrc='https://cdn.jsdelivr.net/npm/pdfjs-dist@4.4.168/build/pdf.worker.min.mjs';_pdfjs=m;return m;}catch{return null;}
-}
-function _setUs(bid,msg,cls){const e=document.getElementById('us-'+bid);if(e){e.textContent=msg;e.className='upload-status '+cls;}}
-async function handleFileDrop(file,bid){
-  if(!file)return;
-  if(file.size>10*1024*1024){_setUs(bid,'File too large (max 10 MB)','err');return;}
-  const ext=file.name.split('.').pop().toLowerCase();
-  // auto-fill name for block or standalone
-  const nameEl=document.getElementById(bid==='main'?'d-name':'dbn-'+bid);
-  if(nameEl&&!nameEl.value.trim())nameEl.value=file.name.replace(/\.[^.]+$/,'');
-  _setUs(bid,'Reading…','loading');
-  const contentEl=document.getElementById(bid==='main'?'d-content':'dbc-'+bid);
-  try{
-    if(ext==='txt'){
-      const t=await _rText(file);contentEl.value=t;
-      _setUs(bid,`✓ ${t.length.toLocaleString()} characters`,'ok');
-    }else if(ext==='docx'||ext==='doc'){
-      if(typeof mammoth==='undefined'){_setUs(bid,'mammoth.js not loaded','err');return;}
-      const r=await mammoth.extractRawText({arrayBuffer:await _rBuf(file)});
-      contentEl.value=r.value||'';
-      _setUs(bid,`✓ Word: ${(r.value||'').length.toLocaleString()} chars`,'ok');
-    }else if(ext==='pdf'){
-      const lib=await _getPdfJs();
-      if(!lib){_setUs(bid,'PDF.js failed — check connection','err');return;}
-      const pdf=await lib.getDocument({data:await _rBuf(file)}).promise;
-      let t='';for(let i=1;i<=pdf.numPages;i++){const pg=await pdf.getPage(i);const c=await pg.getTextContent();t+=(i>1?'\n\n':'')+c.items.map(x=>x.str).join(' ');}
-      contentEl.value=t.replace(/ {2,}/g,' ').trim();
-      _setUs(bid,`✓ PDF: ${pdf.numPages} pages`,'ok');
-    }else{_setUs(bid,'Use .docx, .pdf or .txt','err');}
-  }catch(err){_setUs(bid,'Error: '+err.message,'err');}
-}
-function _rText(f){return new Promise((res,rej)=>{const r=new FileReader();r.onload=e=>res(e.target.result);r.onerror=rej;r.readAsText(f,'UTF-8');});}
-function _rBuf(f){return new Promise((res,rej)=>{const r=new FileReader();r.onload=e=>res(e.target.result);r.onerror=rej;r.readAsArrayBuffer(f);});}
-
-// startup handled by init above
-</script>
-
-<script>
-// ── GitHub config (user/repo hardcoded, token from localStorage) ──
-const GH_USER = 'calofirliviu29';
-const GH_REPO = 'job-tracker';
-const GH_FILE = 'data.json';
-const GH_API  = `https://api.github.com/repos/${GH_USER}/${GH_REPO}/contents/${GH_FILE}`;
-const TOKEN_KEY = 'gh_token_jt';
-
-let _ghSha = null;
-let _syncTimer = null;
-
-function getToken() { return localStorage.getItem(TOKEN_KEY) || ''; }
-
-function _setSyncStatus(state, msg) {
-  [document.getElementById('sync-dot-mob'), document.getElementById('sync-dot-desk')]
-    .forEach(d => { if(d) d.className = 'sync-dot ' + state; });
-  const lbl = document.getElementById('sync-label');
-  if(lbl) lbl.textContent = msg;
-}
-
-// ── Setup overlay ──
-function checkSetup() {
-  if(!getToken()) {
-    document.getElementById('setup-overlay').style.display = 'flex';
-  }
-}
-function dismissSetup() {
-  document.getElementById('setup-overlay').style.display = 'none';
-  _setSyncStatus('err', 'Sync disabilitato — solo locale');
-}
-function saveSetupToken() {
-  const t = document.getElementById('setup-token').value.trim();
-  if(!t.startsWith('ghp_') && !t.startsWith('github_pat_')) {
-    alert('Il token non sembra valido. Deve iniziare con ghp_');
-    return;
-  }
-  localStorage.setItem(TOKEN_KEY, t);
-  document.getElementById('setup-overlay').style.display = 'none';
-  ghSync();
-}
-function openGhSettings() {
-  const cur = getToken();
-  const masked = cur ? cur.slice(0,8) + '…' : '(non configurato)';
-  const html = `<div class="modal-bg" onclick="if(event.target===this)closeModal()"><div class="modal">
-    <h2><i class="ti ti-settings"></i> GitHub Sync</h2>
-    <div class="field"><label>Token attuale</label>
-      <input id="gh-token-inp" type="password" value="${cur}" placeholder="ghp_..." 
-        style="width:100%;padding:8px 10px;font-size:13px;border:0.5px solid var(--border2);border-radius:var(--radius);background:var(--bg);color:var(--text);font-family:var(--font);outline:none">
-    </div>
-    <div style="font-size:11px;color:var(--text3);margin-bottom:1rem">Attuale: ${masked}</div>
-    <div class="modal-actions">
-      <button class="btn danger" onclick="localStorage.removeItem('${TOKEN_KEY}');closeModal();_setSyncStatus('err','Token rimosso')">Rimuovi</button>
-      <button class="btn" onclick="closeModal()">Annulla</button>
-      <button class="btn primary" onclick="localStorage.setItem('${TOKEN_KEY}',document.getElementById('gh-token-inp').value.trim());closeModal();ghSync()">Salva</button>
-    </div>
-  </div></div>`;
-  _show(html);
-}
-
-// ── Pull from GitHub ──
-async function ghPull() {
-  const token = getToken();
-  if(!token) return;
-  _setSyncStatus('syncing', 'Sincronizzazione…');
-  try {
-    const r = await fetch(GH_API + '?t=' + Date.now(), {
-      headers: {
-        'Authorization': 'token ' + token,
-        'Accept': 'application/vnd.github.v3+json'
-      }
-    });
-    if(r.status === 404) {
-      _setSyncStatus('ok', 'Nessun dato remoto — verrà creato al primo salvataggio');
-      return;
-    }
-    if(r.status === 401) {
-      _setSyncStatus('err', 'Token non valido — clicca ⚙ per aggiornarlo');
-      return;
-    }
-    if(!r.ok) throw new Error('HTTP ' + r.status);
-    const json = await r.json();
-    _ghSha = json.sha;
-    const decoded = JSON.parse(atob(json.content.replace(/\n/g, '')));
-    state.jobs = decoded.jobs || [];
-    state.docs  = decoded.docs  || [];
-    save();
-    refreshTopicFilters();
-    render();
-    _setSyncStatus('ok', 'Sincronizzato ' + new Date().toLocaleTimeString());
-  } catch(e) {
-    console.error('ghPull:', e);
-    _setSyncStatus('err', 'Errore: ' + e.message);
-  }
-}
-
-// ── Push to GitHub ──
-async function ghPush() {
-  const token = getToken();
-  if(!token) return;
-  _setSyncStatus('syncing', 'Salvataggio…');
-  try {
-    const content = btoa(unescape(encodeURIComponent(JSON.stringify(state, null, 2))));
-    const body = {
-      message: 'sync ' + new Date().toISOString(),
-      content,
-      ...(_ghSha ? {sha: _ghSha} : {})
-    };
-    const r = await fetch(GH_API, {
-      method: 'PUT',
-      headers: {
-        'Authorization': 'token ' + token,
-        'Accept': 'application/vnd.github.v3+json',
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify(body)
-    });
-    if(r.status === 409 || r.status === 422) {
-      await ghPull();
-      await ghPush();
-      return;
-    }
-    if(r.status === 401) {
-      _setSyncStatus('err', 'Token non valido — clicca ⚙ per aggiornarlo');
-      return;
-    }
-    if(!r.ok) throw new Error('HTTP ' + r.status);
-    const json = await r.json();
-    _ghSha = json.content.sha;
-    _setSyncStatus('ok', 'Salvato ' + new Date().toLocaleTimeString());
-  } catch(e) {
-    console.error('ghPush:', e);
-    _setSyncStatus('err', 'Errore salvataggio: ' + e.message);
-  }
-}
-
-function schedulePush() {
-  if(_syncTimer) clearTimeout(_syncTimer);
-  _syncTimer = setTimeout(ghPush, 1500);
-}
-
-async function ghSync() {
-  await ghPull();
-}
-
-// ── Mobile tab sync ──
-function switchTabAll(t, el) {
-  document.querySelectorAll('.tab').forEach(b => b.classList.remove('active'));
-  document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
-  document.querySelectorAll('.bottom-tab').forEach(b => b.classList.remove('active'));
-  const dt = document.querySelector('.tab[data-tab="' + t + '"]');
-  if(dt) dt.classList.add('active');
-  const sec = document.getElementById('tab-' + t);
-  if(sec) sec.classList.add('active');
-  if(el) el.classList.add('active');
-  else { const bt = document.getElementById('btab-' + t); if(bt) bt.classList.add('active'); }
-}
-
-// ── Service Worker ──
-if('serviceWorker' in navigator) {
-  window.addEventListener('load', () => {
-    navigator.serviceWorker.register('./sw.js')
-      .then(r => console.log('SW:', r.scope))
-      .catch(e => console.warn('SW:', e));
-  });
-}
-</script>
-
-<script>
-// Patch save() to also push to GitHub
-const __origSave = save;
-window.save = function() {
-  __origSave();
-  schedulePush();
-};
-
-// Startup: load local first, then pull from GitHub
-(async () => {
-  load();
-  checkSetup();
-  if(getToken()) await ghPull();
-  else _setSyncStatus('err', 'Sync non configurato — clicca ⚙');
-})();
-</script>
-</body>
-</html>
+const $=id=>document.getElementById(id);
+const SK='jt_v6',KS='supa_key_jt',SU='https://oawhoqfdajpyosecsyls.supabase.co',BK='job-files';
+let state={jobs:[],docs:[],updatedAt:0},filt='active',eid=null,pend={},tops={},urls=[],bc=0,pt=null,repId=null;
+const TP={CL:['Policy','Stakeholder engagement','Project management','Procurement','Evaluation & monitoring','Communications','Data & knowledge management','Finance & budget','Research & innovation','General'],
+CV:['EU Consultant','Programme Manager','Policy Analyst','Project Manager (PRINCE2)','Data & Knowledge Mgmt (CDMP)','EU Official / Institution','Senior Manager'],
+APP:['European Commission','EU Agency','European Parliament','Council of the EU','Private sector','NGO / Think tank']};
+const CATS=['Work contract','ID doc','Payslip','Judicial document','Diploma / degree','Reference letter','Certificate','Other'];
+const TN={CL:'Cover letter',CV:'CV',APP:'Application form',OTHER:'Supporting document'};
+const TL={CL:'Topics',CV:'Profile / specialisation',APP:'Institution type'};
+const TI={CL:'file-text',CV:'id',APP:'forms',OTHER:'files'};
+const TC={CL:'var(--cl)',CV:'var(--cv)',APP:'var(--app)',OTHER:'var(--other)'};
+const CI={CL:'ci-cl',CV:'ci-cv',APP:'ci-app',OTHER:'ci-other'};
+const STAT=['Wishlist','Applied','Test/Assessment','Interview','Offer','Rejected'];
+const MIME={pdf:'application/pdf',doc:'application/msword',docx:'application/vnd.openxmlformats-officedocument.wordprocessingml.document',jpg:'image/jpeg',jpeg:'image/jpeg',png:'image/png'};
+const ACC='.pdf,.doc,.docx'+'';
+const esc=s=>String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+const fd_=d=>d?new Date(d+'T00:00:00').toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'}):'';
+const fsz=n=>n>1048576?(n/1048576).toFixed(1)+' MB':Math.max(1,Math.round(n/1024))+' KB';
+const mimeOf=n=>MIME[(n.split('.').pop()||'').toLowerCase()]||'application/octet-stream';
+const key=()=>localStorage.getItem(KS)||'';
+const hdr=x=>Object.assign({apikey:key(),Authorization:'Bearer '+key()},x||{});
+const doc=id=>state.docs.find(d=>d.id===id);
+const uid=()=>'x'+Math.random().toString(36).slice(2,9);
+const today=()=>new Date().toISOString().slice(0,10);
+function days(s){if(!s)return null;const t=new Date();t.setHours(0,0,0,0);return Math.round((new Date(s+'T00:00:00')-t)/864e5)}
+// ---- state ----
+function norm(){state.jobs=state.jobs||[];state.docs=(state.docs||[]).map(d=>Object.assign({topics:[],description:'',file:null},d,{type:['CL','CV','APP','OTHER'].includes(d.type)?d.type:'CL'}))}
+function load(){try{const s=JSON.parse(localStorage.getItem(SK)||'null');if(s)state=Object.assign(state,s)}catch(e){}norm();localStorage.removeItem('gh_token_jt')}
+function persist(){try{localStorage.setItem(SK,JSON.stringify(state))}catch(e){}}
+function save(){state.updatedAt=Date.now();persist();clearTimeout(pt);pt=setTimeout(push,1500)}
+// ---- sync (Supabase) ----
+function ss(c,m){['sd1','sd2'].forEach(i=>{if($(i))$(i).className='sync-dot '+c});$('sl').textContent=m}
+async function pull(){if(!key())return ss('err','Sync non configurato: apri le impostazioni');ss('syncing','Sincronizzazione...');
+try{const r=await fetch(SU+'/rest/v1/app_state?id=eq.main&select=data',{headers:hdr()});
+if(r.status==401||r.status==403)return ss('err','Chiave non valida');
+if(r.status==404)return ss('err','Tabella app_state mancante: esegui lo SQL');
+if(!r.ok)throw new Error('HTTP '+r.status);
+const rows=await r.json(),rd=rows[0]&&rows[0].data;
+if(!rd||(rd.updatedAt||0)<state.updatedAt){await push();return}
+if(rd.updatedAt>state.updatedAt){state.jobs=rd.jobs||[];state.docs=rd.docs||[];state.updatedAt=rd.updatedAt;norm();persist();render()}
+ss('ok','Sincronizzato '+new Date().toLocaleTimeString())}catch(e){ss('err','Errore: '+e.message)}}
+async function push(){if(!key())return;ss('syncing','Salvataggio...');
+try{const r=await fetch(SU+'/rest/v1/app_state?on_conflict=id',{method:'POST',headers:hdr({'Content-Type':'application/json',Prefer:'resolution=merge-duplicates,return=minimal'}),body:JSON.stringify({id:'main',data:state})});
+if(!r.ok)throw new Error('HTTP '+r.status);ss('ok','Salvato '+new Date().toLocaleTimeString())}catch(e){ss('err','Errore: '+e.message)}}
+function saveKey(i){const v=$(i).value.trim();if(v.length<40)return alert('Chiave non valida');localStorage.setItem(KS,v);$('setup').style.display='none';closeModal();pull()}
+function settings(){show(`<div class="modal-bg" onclick="if(event.target===this)closeModal()"><div class="modal"><h2><i class="ti ti-settings"></i> Impostazioni sync</h2>
+<div class="field"><label>Chiave anon Supabase</label><input id="sk" type="password" value="${esc(key())}"></div>
+<div class="modal-actions"><button class="btn danger" onclick="localStorage.removeItem('${KS}');closeModal();ss('err','Chiave rimossa')">Rimuovi</button><button class="btn" onclick="closeModal()">Annulla</button><button class="btn primary" onclick="saveKey('sk')">Salva</button></div></div></div>`)}
+// ---- files (Supabase Storage) ----
+async function up(id,f){if(!key())throw new Error('Chiave Supabase mancante (impostazioni)');if(f.size>25*1048576)throw new Error('File oltre 25 MB');
+const path=id+'/'+Date.now()+'_'+f.name.normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^\w.-]+/g,'_').slice(-80),mime=f.type||mimeOf(f.name);
+const fd=new FormData();fd.append('cacheControl','3600');fd.append('',new File([f],f.name,{type:mime}));
+const r=await fetch(SU+'/storage/v1/object/'+BK+'/'+path,{method:'POST',headers:Object.assign(hdr(),{'x-upsert':'true'}),body:fd});
+if(!r.ok){let m='';try{m=(await r.json()).message}catch(e){}throw new Error(m||'HTTP '+r.status)}
+return{path,name:f.name,mime,size:f.size}}
+async function rm(p){try{await fetch(SU+'/storage/v1/object/'+BK,{method:'DELETE',headers:hdr({'Content-Type':'application/json'}),body:JSON.stringify({prefixes:[p]})})}catch(e){}}
+async function blob(d){const r=await fetch(SU+'/storage/v1/object/'+BK+'/'+d.file.path,{headers:hdr()});if(!r.ok)throw new Error('HTTP '+r.status);return new Blob([await r.blob()],{type:d.file.mime||mimeOf(d.file.name)})}
+async function dl(id){const d=doc(id);try{const b=await blob(d),a=document.createElement('a');a.href=URL.createObjectURL(b);a.download=d.file.name;document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(a.href),5000)}catch(e){alert('Download non riuscito: '+e.message)}}
+function pick(id){repId=id;$('rep').click()}
+async function repPicked(i){const f=i.files[0];i.value='';if(!f||!repId)return;const d=doc(repId);try{const nf=await up(d.id,f),old=d.file;d.file=nf;save();render();if(old)rm(old.path)}catch(e){alert('Upload non riuscito: '+e.message)}}
+async function delDoc(id){const d=doc(id);if(!confirm('Eliminare "'+d.name+'" e il suo file?'))return;if(d.file)await rm(d.file.path);state.docs=state.docs.filter(x=>x.id!==id);save();render()}
+async function viewDoc(id){const d=doc(id);if(!d)return;
+show(`<div class="modal-bg" onclick="if(event.target===this)closeModal()"><div class="modal xl"><h2><i class="ti ti-${TI[d.type]}" style="color:${TC[d.type]}"></i> ${esc(d.name)}</h2>
+<div style="font-size:12px;color:var(--text2);margin-bottom:8px">${esc(d.category||'')} ${(d.topics||[]).map(t=>'<span class="tag '+tc(t)+'">'+esc(t)+'</span>').join(' ')} ${esc(d.description)}</div>
+<div id="vb" style="max-height:68vh;overflow:auto;border:0.5px solid var(--border);border-radius:var(--radius);padding:.75rem;font-size:13px;line-height:1.6;background:var(--bg2)">Caricamento...</div>
+<div class="modal-actions">${d.file?`<button class="btn" onclick="dl('${d.id}')"><i class="ti ti-download"></i> Scarica</button>`:''}<button class="btn" onclick="closeModal();docModal('${d.type}',null,'${d.id}')"><i class="ti ti-edit"></i> Edit</button><button class="btn primary" onclick="closeModal()">Chiudi</button></div></div></div>`);
+const v=$('vb');if(!d.file){v.style.whiteSpace='pre-wrap';v.textContent=d.content||'Nessun file caricato. Usa Edit o "nuova versione" per caricarlo.';return}
+try{const b=await blob(d),n=d.file.name.toLowerCase();
+if(n.endsWith('.pdf')){const u=URL.createObjectURL(b);urls.push(u);v.style.padding='0';v.innerHTML=`<iframe src="${u}" style="width:100%;height:66vh;border:0"></iframe>`}
+else if(n.endsWith('.docx')){const r=await mammoth.convertToHtml({arrayBuffer:await b.arrayBuffer()});v.style.background='#fff';v.style.color='#111';v.innerHTML=r.value}
+else if(/\.(jpe?g|png)$/.test(n)){const u=URL.createObjectURL(b);urls.push(u);v.innerHTML=`<img src="${u}" style="max-width:100%">`}
+else v.textContent='Anteprima non disponibile per questo formato. Usa Scarica.'}catch(e){v.textContent='Errore: '+e.message}}
+// ---- topics ----
+function tc(t){let h=0;for(const c of t)h=(h*31+c.charCodeAt(0))&65535;return 'tag-'+h%10}
+function tchips(k){return(tops[k]||[]).map(t=>`<span class="topic-chip-wrap"><span class="tag ${tc(t)}">${esc(t)}</span><button data-t="${esc(t)}" onclick="trem('${k}',this.dataset.t)"><i class="ti ti-x" style="font-size:11px"></i></button></span>`).join('')}
+function tp(k,type,init){tops[k]=[...(init||[])];return `<div class="topic-wrap"><input id="ti-${k}" autocomplete="off" placeholder="Scrivi e premi Invio (testo libero)" oninput="tsug('${k}','${type}')" onkeydown="if(event.key==='Enter'||event.key===','){event.preventDefault();tadd('${k}')}" onblur="setTimeout(()=>tadd('${k}'),150)"><div class="topic-sug" id="ts-${k}"></div></div><div class="topic-chips" id="tc-${k}">${tchips(k)}</div>`}
+function tsug(k,type){const i=$('ti-'+k),b=$('ts-'+k),q=i.value.toLowerCase();if(!q)return b.classList.remove('open');
+const m=(TP[type]||[]).filter(t=>t.toLowerCase().includes(q)&&!tops[k].includes(t));if(!m.length)return b.classList.remove('open');
+b.innerHTML=m.map(t=>`<div class="topic-sug-item" data-t="${esc(t)}" onmousedown="event.preventDefault();tpick('${k}',this.dataset.t)">${esc(t)}</div>`).join('');b.classList.add('open')}
+function tpick(k,t){if(!tops[k].includes(t))tops[k].push(t);$('ti-'+k).value='';$('ts-'+k).classList.remove('open');$('tc-'+k).innerHTML=tchips(k)}
+function tadd(k){const i=$('ti-'+k);if(!i)return;const v=i.value.trim().replace(/,$/,'');if(v&&!tops[k].includes(v))tops[k].push(v);i.value='';$('ts-'+k).classList.remove('open');$('tc-'+k).innerHTML=tchips(k)}
+function trem(k,t){tops[k]=tops[k].filter(x=>x!==t);$('tc-'+k).innerHTML=tchips(k)}
+const catIn=(id,v)=>`<input id="${id}" list="cats" value="${esc(v||'')}" placeholder="Work contract, ID doc, Payslip... (testo libero)"><datalist id="cats">${CATS.map(c=>`<option value="${c}">`).join('')}</datalist>`;
+// ---- render ----
+function render(){stats();bar();renderPipeline();['CL','CV','APP','OTHER'].forEach(lib)}
+function stats(){const j=state.jobs,n=s=>j.filter(x=>x.status===s).length;
+$('stats').innerHTML=[['Applications',j.length],['Active',j.filter(x=>x.status!=='Rejected').length],['Interviews',n('Interview')],['Offers',n('Offer')],['Rejected',n('Rejected')]].map(([l,v])=>`<div class="stat-card"><div class="label">${l}</div><div class="value">${v}</div></div>`).join('')}
+function bar(){$('fbar').innerHTML=[['active','Active'],...STAT.map(s=>[s,s]),['all','All']].map(([k,l])=>`<button class="filter-chip${filt===k?' active':''}" onclick="filt='${k}';bar();renderPipeline()">${l}</button>`).join('')}
+function rem(j){if(j.status==='Rejected'||j.status==='Wishlist')return'';const n=days(j.followUpDate),sc=days(j.lastContact);
+if(n!==null){if(n<0)return`<div class="rem red"><i class="ti ti-alert-triangle"></i> Follow-up scaduto da ${-n} ${-n==1?'giorno':'giorni'}: invia un sollecito</div>`;
+if(n===0)return'<div class="rem amber"><i class="ti ti-bell-ringing"></i> Follow-up oggi</div>';
+if(n<=3)return`<div class="rem amber"><i class="ti ti-bell"></i> Follow-up tra ${n} ${n==1?'giorno':'giorni'}</div>`;
+return`<div class="rem grey"><i class="ti ti-bell"></i> Follow-up il ${fd_(j.followUpDate)}</div>`}
+if(sc!==null&&-sc>=14&&j.status!=='Offer')return`<div class="rem amber"><i class="ti ti-clock-exclamation"></i> Nessun contatto da ${-sc} giorni: valuta un sollecito</div>`;return''}
+function renderPipeline(){let a=[...state.jobs];if(filt==='active')a=a.filter(j=>j.status!=='Rejected');else if(filt!=='all')a=a.filter(j=>j.status===filt);
+const s=$('sort').value;if(s==='alpha')a.sort((x,y)=>x.org.localeCompare(y.org));else if(s==='fu')a.sort((x,y)=>(x.followUpDate||'9999').localeCompare(y.followUpDate||'9999'));else a.sort((x,y)=>(y.date||'').localeCompare(x.date||''));
+$('pipeline-list').innerHTML=a.length?a.map(jobCard).join(''):'<div class="empty-state"><div class="icon"><i class="ti ti-briefcase-off"></i></div><p>Nessuna application in questa vista.</p></div>'}
+function chip(d){return`<div class="doc-chip" onclick="viewDoc('${d.id}')"><div class="ci ${CI[d.type]}"><i class="ti ti-${TI[d.type]}"></i></div><span class="chip-name">${esc(d.name)}${d.category?' ('+esc(d.category)+')':''}</span>
+${d.file?`<button class="ic" title="Scarica" onclick="event.stopPropagation();dl('${d.id}')"><i class="ti ti-download"></i></button>`:'<small style="color:var(--text3)">no file</small>'}
+<button class="ic" title="Nuova versione" onclick="event.stopPropagation();pick('${d.id}')"><i class="ti ti-upload"></i></button>
+<button class="ic del" title="Elimina" onclick="event.stopPropagation();delDoc('${d.id}')"><i class="ti ti-trash"></i></button></div>`}
+function jobCard(j){const L=state.docs.filter(d=>d.linkedJob===j.id);
+const secs=['CL','CV','APP','OTHER'].map(t=>{const x=L.filter(d=>d.type===t);return x.length?`<div class="job-docs-type-row"><div class="job-docs-type-label" style="color:${TC[t]}"><i class="ti ti-${TI[t]}"></i>${t==='OTHER'?'Supporting documents':TN[t]+'s'}</div><div class="doc-chips">${x.map(chip).join('')}</div></div>`:''}).join('');
+return`<div class="card"><div style="display:flex;justify-content:space-between;gap:10px"><div><div class="job-title">${esc(j.title)}</div><div class="job-org">${esc(j.org)}${j.location?' · '+esc(j.location):''}</div></div><span class="badge badge-${({Applied:'applied',Interview:'interview',Offer:'offer',Rejected:'rejected',Wishlist:'wishlist','Test/Assessment':'test'})[j.status]}">${j.status}</span></div>
+<div class="job-meta"><span><i class="ti ti-calendar"></i>${fd_(j.date)}</span>${j.deadline?`<span><i class="ti ti-calendar-due"></i>Deadline ${fd_(j.deadline)}</span>`:''}${j.url?`<a href="${esc(j.url)}" target="_blank"><i class="ti ti-external-link"></i>Job post</a>`:''}
+${j.lastContact?`<span><i class="ti ti-message"></i>Ultimo contatto ${fd_(j.lastContact)}</span>`:''}${j.contactEmail?`<a href="mailto:${esc(j.contactEmail)}"><i class="ti ti-mail"></i>${esc(j.contactEmail)}</a>`:''}</div>
+${rem(j)}${j.notes?`<div style="font-size:12px;color:var(--text2);margin-top:8px;padding:7px 10px;background:var(--bg2);border-radius:var(--radius)">${esc(j.notes)}</div>`:''}
+<div class="job-docs-section">${secs||'<div style="font-size:12px;color:var(--text3);margin-bottom:6px">Nessun documento</div>'}
+<div class="doc-add-row"><button class="btn btn-cl" onclick="docModal('CL','${j.id}')"><i class="ti ti-plus"></i> Cover letter</button><button class="btn btn-cv" onclick="cvPicker('${j.id}')"><i class="ti ti-plus"></i> CV</button><button class="btn btn-app" onclick="docModal('APP','${j.id}')"><i class="ti ti-plus"></i> App form</button><button class="btn btn-other" onclick="docModal('OTHER','${j.id}')"><i class="ti ti-plus"></i> Supporting documents</button></div></div>
+<div class="job-actions"><button class="btn" onclick="jobModal('${j.id}')"><i class="ti ti-edit"></i> Edit</button><button class="btn" style="background:#fcebeb;color:#a32d2d;border-color:#f7c1c1;font-weight:500" onclick="delJob('${j.id}')"><i class="ti ti-trash"></i> Delete</button></div></div>`}
+function lib(t){const el=$('tab-'+t),L=state.docs.filter(d=>d.type===t),f=$('flt-'+t)?$('flt-'+t).value:'';
+const keys=d=>t==='OTHER'?[d.category||'Other']:t==='APP'?['']:(d.topics&&d.topics.length?d.topics:['(nessuno)']);
+const all=[...new Set(L.flatMap(keys))].filter(Boolean).sort();
+const sel=(t==='CL'||t==='CV')?`<select id="flt-${t}" onchange="lib('${t}')"><option value="">Tutti</option>${all.map(k=>`<option${k===f?' selected':''}>${esc(k)}</option>`).join('')}</select>`:'';
+const G={};L.forEach(d=>keys(d).forEach(k=>{if(!f||k===f)(G[k]=G[k]||[]).push(d)}));
+el.innerHTML=`<div class="lib-header"><div class="lib-title" style="color:${TC[t]}"><i class="ti ti-${TI[t]}"></i> ${t==='OTHER'?'Supporting documents':TN[t]+'s'}</div><div class="lib-controls">${sel}<button class="btn" onclick="docModal('${t}')"><i class="ti ti-plus"></i> New</button></div></div>`+
+(L.length?Object.keys(G).sort().map(k=>`<div class="topic-group">${k?`<div class="topic-group-title">${esc(k)} <span class="count">${G[k].length}</span></div>`:''}<div class="lib-grid">${G[k].map(card).join('')}</div></div>`).join(''):'<div class="empty-state"><p>Ancora nessun documento.</p></div>')}
+function card(d){const j=state.jobs.find(x=>x.id===d.linkedJob);return`<div class="lib-card"><div class="lib-card-header"><div class="lib-card-icon ${d.type.toLowerCase()}"><i class="ti ti-${TI[d.type]}"></i></div><div style="flex:1;min-width:0"><div class="lib-card-name">${esc(d.name)}</div><div class="lib-card-sub">${d.file?esc(d.file.name)+' · '+fsz(d.file.size):'nessun file'}</div></div></div>
+${(d.topics||[]).length?`<div class="lib-card-tags">${d.topics.map(t=>`<span class="tag ${tc(t)}">${esc(t)}</span>`).join('')}</div>`:''}${d.description?`<div class="lib-card-desc">${esc(d.description)}</div>`:''}${j?`<div class="lib-card-linked"><i class="ti ti-link"></i>${esc(j.org)}</div>`:''}
+<div class="lib-card-footer"><button class="btn" onclick="viewDoc('${d.id}')"><i class="ti ti-eye"></i> View</button>${d.file?`<button class="btn" onclick="dl('${d.id}')"><i class="ti ti-download"></i> Download</button>`:''}<button class="btn" onclick="docModal('${d.type}',null,'${d.id}')"><i class="ti ti-edit"></i> Edit</button><button class="btn danger" onclick="delDoc('${d.id}')"><i class="ti ti-trash"></i> Delete</button></div></div>`}
+function tab(t){document.querySelectorAll('.tab,.bottom-tab').forEach(b=>b.classList.toggle('active',b.dataset.tab===t));document.querySelectorAll('.section').forEach(s=>s.classList.toggle('active',s.id==='tab-'+t))}
+// ---- modals ----
+function show(h){const o=$('modal-overlay');o.innerHTML=h;o.style.display='block'}
+function closeModal(){const o=$('modal-overlay');o.style.display='none';o.innerHTML='';urls.forEach(u=>URL.revokeObjectURL(u));urls=[];eid=null;pend={};tops={}}
+function blk(t){const b='b'+(++bc);return`<div class="doc-block" data-b="${b}" data-t="${t}"><div class="doc-block-header"><div class="doc-block-title" style="color:${TC[t]}"><i class="ti ti-${TI[t]}"></i>${TN[t]}</div><button class="btn danger" style="padding:3px 8px" onclick="this.closest('.doc-block').remove()"><i class="ti ti-trash"></i></button></div><div class="doc-block-fields">
+<div><div class="field"><label>Nome (se vuoto, usa il nome del file)</label><input id="bn-${b}"></div></div>
+${t==='OTHER'?`<div class="field"><label>Tipo di documento</label>${catIn('bc-'+b)}</div>`:`<div class="field"><label>${TL[t]}</label>${tp(b,t)}</div>`}
+<div class="field"><label>File (.pdf, .doc, .docx)</label><input type="file" id="bf-${b}" accept="${t==='OTHER'?ACC+',.jpg,.jpeg,.png':ACC}" onchange="pend['${b}']=this.files[0]"></div></div></div>`}
+function addBlk(t){const d=document.createElement('div');d.innerHTML=blk(t);$('blks').appendChild(d.firstElementChild)}
+function jobModal(id){const j=state.jobs.find(x=>x.id===id)||{title:'',org:'',location:'',status:'Applied',date:today(),deadline:'',url:'',notes:'',lastContact:'',contactEmail:'',followUpDate:''};eid=id||null;
+show(`<div class="modal-bg" onclick="if(event.target===this)closeModal()"><div class="modal xl"><h2><i class="ti ti-briefcase"></i>${id?'Edit':'New'} application</h2>
+<div class="field-row"><div class="field"><label>Job title</label><input id="j-title" value="${esc(j.title)}"></div><div class="field"><label>Organisation</label><input id="j-org" value="${esc(j.org)}"></div></div>
+<div class="field-row"><div class="field"><label>Location</label><input id="j-loc" value="${esc(j.location)}"></div><div class="field"><label>Status</label><select id="j-st">${STAT.map(s=>`<option${s===j.status?' selected':''}>${s}</option>`).join('')}</select></div></div>
+<div class="field-row"><div class="field"><label>Date applied</label><input type="date" id="j-date" value="${j.date||''}"></div><div class="field"><label>Deadline</label><input type="date" id="j-dl" value="${j.deadline||''}"></div></div>
+<div class="field"><label>Job post URL</label><input id="j-url" value="${esc(j.url)}"></div>
+<div class="modal-divider"><i class="ti ti-address-book"></i> Contatto recruiter</div>
+<div class="field-row"><div class="field"><label>Data ultimo contatto</label><input type="date" id="j-lc" value="${j.lastContact||''}"></div><div class="field"><label>Prossimo follow-up</label><input type="date" id="j-fu" value="${j.followUpDate||''}"></div></div>
+<div class="field"><label>Email di contatto</label><input type="email" id="j-em" value="${esc(j.contactEmail)}" placeholder="nome@azienda.com"></div>
+<div class="field"><label>Notes</label><textarea id="j-notes" style="min-height:60px">${esc(j.notes)}</textarea></div>
+<div class="modal-divider"><i class="ti ti-paperclip"></i> Aggiungi documenti${id?' (quelli esistenti si gestiscono dalla card)':''}</div>
+<div id="blks"></div><div style="display:flex;gap:7px;flex-wrap:wrap"><button class="btn btn-cl" onclick="addBlk('CL')"><i class="ti ti-plus"></i> Cover letter</button><button class="btn btn-cv" onclick="addBlk('CV')"><i class="ti ti-plus"></i> CV</button><button class="btn btn-app" onclick="addBlk('APP')"><i class="ti ti-plus"></i> App form</button><button class="btn btn-other" onclick="addBlk('OTHER')"><i class="ti ti-plus"></i> Supporting documents</button></div>
+<div class="modal-actions"><button class="btn" onclick="closeModal()">Cancel</button><button class="btn primary" id="sv" onclick="saveJob()">Save</button></div></div></div>`)}
+async function saveJob(){const title=$('j-title').value.trim(),org=$('j-org').value.trim();if(!title||!org)return alert('Titolo e organizzazione sono obbligatori');
+const old=state.jobs.find(x=>x.id===eid),j=Object.assign({},old,{id:eid||uid(),title,org,location:$('j-loc').value.trim(),status:$('j-st').value,date:$('j-date').value,deadline:$('j-dl').value,url:$('j-url').value.trim(),notes:$('j-notes').value.trim(),lastContact:$('j-lc').value,followUpDate:$('j-fu').value,contactEmail:$('j-em').value.trim()});
+if(old)state.jobs[state.jobs.indexOf(old)]=j;else state.jobs.unshift(j);
+$('sv').disabled=true;$('sv').textContent='Caricamento...';const errs=[];
+for(const el of document.querySelectorAll('.doc-block')){const b=el.dataset.b,t=el.dataset.t;if(t!=='OTHER')tadd(b);const f=pend[b],name=$('bn-'+b).value.trim()||(f&&f.name.replace(/\.[^.]+$/,''));if(!name)continue;
+const d={id:uid(),type:t,name,description:'',topics:t==='OTHER'?[]:[...(tops[b]||[])],category:t==='OTHER'?$('bc-'+b).value.trim():undefined,linkedJob:j.id,date:today(),file:null};
+if(f)try{d.file=await up(d.id,f)}catch(e){errs.push(name+': '+e.message)}state.docs.unshift(d)}
+save();closeModal();render();if(errs.length)alert('Documenti creati ma file non caricati (riprova con "nuova versione"):\n'+errs.join('\n'))}
+function docModal(t,jobId,id){const d=doc(id)||{type:t,name:'',description:'',topics:[],category:'',linkedJob:jobId||'',date:today(),file:null};eid=id||null;pend.m=null;
+show(`<div class="modal-bg" onclick="if(event.target===this)closeModal()"><div class="modal"><h2><i class="ti ti-${TI[t]}" style="color:${TC[t]}"></i>${id?'Edit':'New'} ${TN[t]}</h2>
+<div class="field"><label>Nome (se vuoto, usa il nome del file)</label><input id="d-name" value="${esc(d.name)}"></div>
+<div class="field"><label>Descrizione (opzionale)</label><input id="d-desc" value="${esc(d.description)}"></div>
+${t==='OTHER'?`<div class="field"><label>Tipo di documento</label>${catIn('d-cat',d.category)}</div>`:`<div class="field"><label>${TL[t]}</label>${tp('m',t,d.topics)}</div>`}
+<div class="field"><label>Application collegata</label><select id="d-job"><option value="">Nessuna</option>${state.jobs.map(j=>`<option value="${j.id}"${j.id===d.linkedJob?' selected':''}>${esc(j.org)} - ${esc(j.title)}</option>`).join('')}</select></div>
+<div class="field"><label>File (.pdf, .doc, .docx${t==='OTHER'?', .jpg, .png':''})${d.file?' - attuale: '+esc(d.file.name)+', scegline uno per sostituirlo':''}</label><input type="file" accept="${t==='OTHER'?ACC+',.jpg,.jpeg,.png':ACC}" onchange="pend.m=this.files[0]"></div>
+<div class="modal-actions"><button class="btn" onclick="closeModal()">Cancel</button><button class="btn primary" id="sv" onclick="saveDoc('${t}')">Save</button></div></div></div>`)}
+async function saveDoc(t){if(t!=='OTHER')tadd('m');const f=pend.m,name=$('d-name').value.trim()||(f&&f.name.replace(/\.[^.]+$/,''));if(!name)return alert('Inserisci un nome o scegli un file');
+const old=doc(eid),d=Object.assign({},old,{id:eid||uid(),type:t,name,description:$('d-desc').value.trim(),linkedJob:$('d-job').value,topics:t==='OTHER'?[]:[...tops.m],file:old?old.file:null,date:old?old.date:today()});
+if(t==='OTHER')d.category=$('d-cat').value.trim();
+$('sv').disabled=true;$('sv').textContent='Caricamento...';
+if(f)try{const nf=await up(d.id,f),prev=d.file;d.file=nf;if(prev)rm(prev.path)}catch(e){$('sv').disabled=false;$('sv').textContent='Save';return alert('Upload non riuscito: '+e.message)}
+if(old)state.docs[state.docs.indexOf(old)]=d;else state.docs.unshift(d);save();closeModal();render()}
+function cvPicker(jid){const cvs=state.docs.filter(d=>d.type==='CV');
+show(`<div class="modal-bg" onclick="if(event.target===this)closeModal()"><div class="modal"><h2><i class="ti ti-id" style="color:var(--cv)"></i> CV per questa application</h2>
+${cvs.length?`<div style="font-size:12px;color:var(--text2);margin-bottom:8px">Tocca per collegare o scollegare un CV esistente</div><div class="cv-pick-list">${cvs.map(d=>`<div class="cv-pick-item${d.linkedJob===jid?' sel':''}" onclick="linkCv('${d.id}','${jid}')"><div style="flex:1"><b style="font-size:13px">${esc(d.name)}</b><div>${(d.topics||[]).map(t=>`<span class="tag ${tc(t)}">${esc(t)}</span>`).join(' ')}</div></div>${d.linkedJob===jid?'<i class="ti ti-check" style="color:var(--cv)"></i>':''}</div>`).join('')}</div>`:'<p style="font-size:13px;color:var(--text2)">Nessun CV salvato.</p>'}
+<div class="modal-actions"><button class="btn" onclick="closeModal()">Chiudi</button><button class="btn btn-cv" onclick="closeModal();docModal('CV','${jid}')"><i class="ti ti-plus"></i> Nuovo CV</button></div></div></div>`)}
+function linkCv(id,jid){const d=doc(id);d.linkedJob=d.linkedJob===jid?'':jid;save();render();cvPicker(jid)}
+async function delJob(id){if(!confirm('Eliminare questa application? I documenti collegati restano nelle librerie.'))return;state.jobs=state.jobs.filter(x=>x.id!==id);state.docs.forEach(d=>{if(d.linkedJob===id)d.linkedJob=''});save();render()}
+function exportData(){const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([JSON.stringify(state,null,2)],{type:'application/json'}));a.download='job-tracker-metadata.json';a.click()}
+function importData(e){const f=e.target.files[0];if(!f)return;const r=new FileReader();r.onload=x=>{try{const p=JSON.parse(x.target.result);state.jobs=p.jobs||[];state.docs=p.docs||[];norm();save();render()}catch(err){alert('File non valido')}};r.readAsText(f)}
+load();render();if(key())pull();else{ss('err','Sync non configurato');$('setup').style.display='flex'}
+document.addEventListener('visibilitychange',()=>{if(!document.hidden&&key()&&!pt)pull()});
+if('serviceWorker' in navigator)window.addEventListener('load',()=>navigator.serviceWorker.register('./sw.js').catch(()=>{}));
+</script></body></html>
