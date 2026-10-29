@@ -420,7 +420,7 @@ function tadd(k){const i=$('ti-'+k);if(!i)return;const v=i.value.trim().replace(
 function trem(k,t){tops[k]=tops[k].filter(x=>x!==t);$('tc-'+k).innerHTML=tchips(k)}
 const catIn=(id,v)=>`<input id="${id}" list="cats" value="${esc(v||'')}" placeholder="Work contract, ID doc, Payslip... (testo libero)"><datalist id="cats">${CATS.map(c=>`<option value="${c}">`).join('')}</datalist>`;
 // ---- render ----
-function render(){stats();bar();renderPipeline();['CL','CV','APP','OTHER'].forEach(lib)}
+function render(){stats();bar();renderPipeline();['CL','CV','APP','OTHER'].forEach(lib);jd()}
 function stats(){const j=state.jobs,n=s=>j.filter(x=>x.status===s).length;
 $('stats').innerHTML=[['Applications',j.length],['Active',j.filter(x=>x.status!=='Rejected').length],['Interviews',n('Interview')],['Offers',n('Offer')],['Rejected',n('Rejected')]].map(([l,v])=>`<div class="stat-card"><div class="label">${l}</div><div class="value">${v}</div></div>`).join('')}
 function bar(){$('fbar').innerHTML=[['active','Active'],...STAT.map(s=>[s,s]),['all','All']].map(([k,l])=>`<button class="filter-chip${filt===k?' active':''}" onclick="filt='${k}';bar();renderPipeline()">${l}</button>`).join('')}
@@ -475,9 +475,9 @@ show(`<div class="modal-bg" onclick="if(event.target===this)closeModal()"><div c
 <div class="field-row"><div class="field"><label>Data ultimo contatto</label><input type="date" id="j-lc" value="${j.lastContact||''}"></div><div class="field"><label>Prossimo follow-up</label><input type="date" id="j-fu" value="${j.followUpDate||''}"></div></div>
 <div class="field"><label>Email di contatto</label><input type="email" id="j-em" value="${esc(j.contactEmail)}" placeholder="nome@azienda.com"></div>
 <div class="field"><label>Notes</label><textarea id="j-notes" style="min-height:60px">${esc(j.notes)}</textarea></div>
-<div class="modal-divider"><i class="ti ti-paperclip"></i> Aggiungi documenti${id?' (quelli esistenti si gestiscono dalla card)':''}</div>
+${id?'<div class="modal-divider"><i class="ti ti-files"></i> Allegati di questa application</div><div id="jdocs"></div>':''}<div class="modal-divider"><i class="ti ti-paperclip"></i> Aggiungi nuovi documenti</div>
 <div id="blks"></div><div style="display:flex;gap:7px;flex-wrap:wrap"><button class="btn btn-cl" onclick="addBlk('CL')"><i class="ti ti-plus"></i> Cover letter</button><button class="btn btn-cv" onclick="addBlk('CV')"><i class="ti ti-plus"></i> CV</button><button class="btn btn-app" onclick="addBlk('APP')"><i class="ti ti-plus"></i> App form</button><button class="btn btn-other" onclick="addBlk('OTHER')"><i class="ti ti-plus"></i> Supporting documents</button></div>
-<div class="modal-actions"><button class="btn" onclick="closeModal()">Cancel</button><button class="btn primary" id="sv" onclick="saveJob()">Save</button></div></div></div>`)}
+<div class="modal-actions"><button class="btn" onclick="closeModal()">Cancel</button><button class="btn primary" id="sv" onclick="saveJob()">Save</button></div></div></div>`);jd()}
 async function saveJob(){const title=$('j-title').value.trim(),org=$('j-org').value.trim();if(!title||!org)return alert('Titolo e organizzazione sono obbligatori');
 const old=state.jobs.find(x=>x.id===eid),j=Object.assign({},old,{id:eid||uid(),title,org,location:$('j-loc').value.trim(),status:$('j-st').value,date:$('j-date').value,deadline:$('j-dl').value,url:$('j-url').value.trim(),notes:$('j-notes').value.trim(),lastContact:$('j-lc').value,followUpDate:$('j-fu').value,contactEmail:$('j-em').value.trim()});
 if(old)state.jobs[state.jobs.indexOf(old)]=j;else state.jobs.unshift(j);
@@ -486,6 +486,13 @@ for(const el of document.querySelectorAll('.doc-block')){const b=el.dataset.b,t=
 const d={id:uid(),type:t,name,description:'',topics:t==='OTHER'?[]:[...(tops[b]||[])],category:t==='OTHER'?$('bc-'+b).value.trim():undefined,linkedJob:j.id,date:today(),file:null};
 if(f)try{d.file=await up(d.id,f)}catch(e){errs.push(name+': '+e.message)}state.docs.unshift(d)}
 save();closeModal();render();if(errs.length)alert('Documenti creati ma file non caricati (riprova con "nuova versione"):\n'+errs.join('\n'))}
+function unlink(id){doc(id).linkedJob='';save();render()}
+function jd(){const el=$('jdocs');if(!el)return;const L=state.docs.filter(d=>d.linkedJob===eid);
+el.innerHTML=L.length?L.map(d=>`<div class="card" style="padding:.6rem .8rem;margin-bottom:6px;display:flex;align-items:center;gap:8px;flex-wrap:wrap"><div class="ci ${CI[d.type]}" style="width:28px;height:28px;border-radius:6px;display:flex;align-items:center;justify-content:center;flex-shrink:0"><i class="ti ti-${TI[d.type]}"></i></div>
+<div style="flex:1;min-width:140px"><div style="font-size:13px;font-weight:500">${esc(d.name)}</div><div style="font-size:11px;color:var(--text2)">${TN[d.type]}${d.category?' · '+esc(d.category):''}${(d.topics||[]).length?' · '+d.topics.map(esc).join(', '):''}${d.file?' · '+esc(d.file.name)+' ('+fsz(d.file.size)+')':' · nessun file'}</div></div>
+${d.file?`<button class="btn" onclick="dl('${d.id}')"><i class="ti ti-download"></i></button>`:''}<button class="btn" title="Nuova versione del file" onclick="pick('${d.id}')"><i class="ti ti-upload"></i></button>
+<button class="btn" title="Toglie il documento da questa application ma lo tiene in libreria" onclick="unlink('${d.id}')"><i class="ti ti-unlink"></i> Scollega</button>
+<button class="btn danger" title="Elimina documento e file" onclick="delDoc('${d.id}')"><i class="ti ti-trash"></i> Elimina</button></div>`).join(''):'<div style="font-size:12px;color:var(--text3)">Nessun allegato.</div>'}
 function docModal(t,jobId,id){const d=doc(id)||{type:t,name:'',description:'',topics:[],category:'',linkedJob:jobId||'',date:today(),file:null};eid=id||null;pend.m=null;
 show(`<div class="modal-bg" onclick="if(event.target===this)closeModal()"><div class="modal"><h2><i class="ti ti-${TI[t]}" style="color:${TC[t]}"></i>${id?'Edit':'New'} ${TN[t]}</h2>
 <div class="field"><label>Nome (se vuoto, usa il nome del file)</label><input id="d-name" value="${esc(d.name)}"></div>
