@@ -313,10 +313,10 @@ body {
 <input id="setup-key" type="password" placeholder="eyJ..." autocomplete="off">
 <div style="display:flex;gap:8px;justify-content:flex-end"><button class="btn" onclick="$('setup').style.display='none'">Salta</button><button class="btn primary" onclick="saveKey('setup-key')">Salva e connetti</button></div></div></div>
 <div class="pwa-header"><h1 style="font-size:17px;font-weight:600"><i class="ti ti-briefcase"></i> Job Tracker</h1>
-<div style="display:flex;gap:6px;align-items:center"><span class="sync-dot ok" id="sd1"></span><button class="btn primary" onclick="jobModal()"><i class="ti ti-plus"></i> New</button><button class="btn" onclick="pull()"><i class="ti ti-refresh"></i></button></div></div>
+<div style="display:flex;gap:6px;align-items:center"><span class="sync-dot ok" id="sd1"></span><button class="btn primary" onclick="jobModal()"><i class="ti ti-plus"></i> New</button><button class="btn" onclick="pull()"><i class="ti ti-refresh"></i> Sync</button></div></div>
 <div class="sync-bar"><span class="sync-dot ok" id="sd2"></span><span id="sl">Avvio…</span><span style="flex:1"></span>
 <button class="btn" style="font-size:11px;padding:3px 8px" onclick="pull()"><i class="ti ti-refresh"></i> Sync</button>
-<button class="btn" style="font-size:11px;padding:3px 8px" onclick="settings()"><i class="ti ti-settings"></i></button></div>
+<button class="btn" style="font-size:11px;padding:3px 8px" onclick="settings()"><i class="ti ti-settings"></i> Impostazioni</button></div>
 <div class="bottom-tabs">
 <button class="bottom-tab active" data-tab="pipeline" onclick="tab('pipeline')"><i class="ti ti-layout-list"></i>Pipeline</button>
 <button class="bottom-tab" data-tab="CL" onclick="tab('CL')"><i class="ti ti-file-text"></i>CL</button>
@@ -434,9 +434,9 @@ function renderPipeline(){let a=[...state.jobs];if(filt==='active')a=a.filter(j=
 const s=$('sort').value;if(s==='alpha')a.sort((x,y)=>x.org.localeCompare(y.org));else if(s==='fu')a.sort((x,y)=>(x.followUpDate||'9999').localeCompare(y.followUpDate||'9999'));else a.sort((x,y)=>(y.date||'').localeCompare(x.date||''));
 $('pipeline-list').innerHTML=a.length?a.map(jobCard).join(''):'<div class="empty-state"><div class="icon"><i class="ti ti-briefcase-off"></i></div><p>Nessuna application in questa vista.</p></div>'}
 function chip(d){return`<div class="doc-chip" onclick="viewDoc('${d.id}')"><div class="ci ${CI[d.type]}"><i class="ti ti-${TI[d.type]}"></i></div><span class="chip-name">${esc(d.name)}${d.category?' ('+esc(d.category)+')':''}</span>
-${d.file?`<button class="ic" title="Scarica" onclick="event.stopPropagation();dl('${d.id}')"><i class="ti ti-download"></i></button>`:'<small style="color:var(--text3)">no file</small>'}
-<button class="ic" title="Nuova versione" onclick="event.stopPropagation();pick('${d.id}')"><i class="ti ti-upload"></i></button>
-<button class="ic del" title="Elimina" onclick="event.stopPropagation();delDoc('${d.id}')"><i class="ti ti-trash"></i></button></div>`}
+${d.file?`<button class="ic" title="Scarica" onclick="event.stopPropagation();dl('${d.id}')"><i class="ti ti-download"></i><span style="font-size:11px"> Scarica</span></button>`:'<small style="color:var(--text3)">no file</small>'}
+<button class="ic" title="Nuova versione" onclick="event.stopPropagation();pick('${d.id}')"><i class="ti ti-upload"></i><span style="font-size:11px"> Nuova versione</span></button>
+<button class="ic del" title="Elimina" onclick="event.stopPropagation();delDoc('${d.id}')"><i class="ti ti-trash"></i><span style="font-size:11px"> Elimina</span></button></div>`}
 function jobCard(j){const L=state.docs.filter(d=>d.linkedJob===j.id);
 const secs=['CL','CV','APP','OTHER'].map(t=>{const x=L.filter(d=>d.type===t);return x.length?`<div class="job-docs-type-row"><div class="job-docs-type-label" style="color:${TC[t]}"><i class="ti ti-${TI[t]}"></i>${t==='OTHER'?'Supporting documents':TN[t]+'s'}</div><div class="doc-chips">${x.map(chip).join('')}</div></div>`:''}).join('');
 return`<div class="card"><div style="display:flex;justify-content:space-between;gap:10px"><div><div class="job-title">${esc(j.title)}</div><div class="job-org">${esc(j.org)}${j.location?' · '+esc(j.location):''}</div></div><span class="badge badge-${({Applied:'applied',Interview:'interview',Offer:'offer',Rejected:'rejected',Wishlist:'wishlist','Test/Assessment':'test'})[j.status]}">${j.status}</span></div>
@@ -490,7 +490,7 @@ function unlink(id){doc(id).linkedJob='';save();render()}
 function jd(){const el=$('jdocs');if(!el)return;const L=state.docs.filter(d=>d.linkedJob===eid);
 el.innerHTML=L.length?L.map(d=>`<div class="card" style="padding:.6rem .8rem;margin-bottom:6px;display:flex;align-items:center;gap:8px;flex-wrap:wrap"><div class="ci ${CI[d.type]}" style="width:28px;height:28px;border-radius:6px;display:flex;align-items:center;justify-content:center;flex-shrink:0"><i class="ti ti-${TI[d.type]}"></i></div>
 <div style="flex:1;min-width:140px"><div style="font-size:13px;font-weight:500">${esc(d.name)}</div><div style="font-size:11px;color:var(--text2)">${TN[d.type]}${d.category?' · '+esc(d.category):''}${(d.topics||[]).length?' · '+d.topics.map(esc).join(', '):''}${d.file?' · '+esc(d.file.name)+' ('+fsz(d.file.size)+')':' · nessun file'}</div></div>
-${d.file?`<button class="btn" onclick="dl('${d.id}')"><i class="ti ti-download"></i></button>`:''}<button class="btn" title="Nuova versione del file" onclick="pick('${d.id}')"><i class="ti ti-upload"></i></button>
+${d.file?`<button class="btn" onclick="dl('${d.id}')"><i class="ti ti-download"></i> Scarica</button>`:''}<button class="btn" title="Sostituisce il file con una nuova versione" onclick="pick('${d.id}')"><i class="ti ti-upload"></i> Nuova versione</button>
 <button class="btn" title="Toglie il documento da questa application ma lo tiene in libreria" onclick="unlink('${d.id}')"><i class="ti ti-unlink"></i> Scollega</button>
 <button class="btn danger" title="Elimina documento e file" onclick="delDoc('${d.id}')"><i class="ti ti-trash"></i> Elimina</button></div>`).join(''):'<div style="font-size:12px;color:var(--text3)">Nessun allegato.</div>'}
 function docModal(t,jobId,id){const d=doc(id)||{type:t,name:'',description:'',topics:[],category:'',linkedJob:jobId||'',date:today(),file:null};eid=id||null;pend.m=null;
