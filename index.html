@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1, viewport-fit=cover">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -309,6 +309,8 @@ body {
 .rem.red{background:#fcebeb;color:#a32d2d}.rem.amber{background:#faeeda;color:#854f0b}.rem.grey{background:var(--bg2);color:var(--text2)}
 .ic{padding:2px 5px;border:none;background:none;color:var(--text3);cursor:pointer;font-size:14px}.ic:hover{color:var(--text)}
 .ic.del:hover{color:#a32d2d}
+@media(max-width:640px){input,select,textarea{font-size:16px!important}}
+html,body{max-width:100%;overflow-x:hidden}
 </style></head><body>
 <div class="setup-overlay" id="setup" style="display:none"><div class="setup-box"><h2><i class="ti ti-lock"></i> Accedi</h2>
 <p>Email e password dell'utente creato in Supabase. Sul telefono Safari può salvarle nel portachiavi.</p>
@@ -331,12 +333,14 @@ body {
 <div class="tabs"><button class="tab active" data-tab="pipeline" onclick="tab('pipeline')"><i class="ti ti-layout-list"></i> Pipeline</button><button class="tab" data-tab="CL" onclick="tab('CL')"><i class="ti ti-file-text"></i> Cover letters</button><button class="tab" data-tab="CV" onclick="tab('CV')"><i class="ti ti-id"></i> CVs</button><button class="tab" data-tab="APP" onclick="tab('APP')"><i class="ti ti-forms"></i> App forms</button><button class="tab" data-tab="OTHER" onclick="tab('OTHER')"><i class="ti ti-files"></i> Supporting docs</button></div>
 <div id="tab-pipeline" class="section active">
 <div class="filter-bar" id="fbar"></div>
+<div class="filter-bar" id="fbar2" style="padding-left:12px;margin-left:4px;border-left:2px solid var(--border2)"></div>
 <div class="sort-bar"><label>Sort by</label><select id="sort" onchange="renderPipeline()"><option value="date">Newest first</option><option value="fu">Follow-up date</option><option value="alpha">Company A-Z</option></select></div>
 <div id="pipeline-list"></div></div>
 <div id="tab-CL" class="section"></div><div id="tab-CV" class="section"></div><div id="tab-APP" class="section"></div><div id="tab-OTHER" class="section"></div>
 </div></div>
 <div id="modal-overlay" style="display:none"></div>
 <input type="file" id="rep" style="display:none" accept=".pdf,.doc,.docx,.jpg,.jpeg,.png" onchange="repPicked(this)">
+<input type="file" id="vrep" style="display:none" accept=".pdf,.doc,.docx" onchange="vacPicked(this)">
 <script>
 const $=id=>document.getElementById(id);
 const SK='jt_v6',KS='supa_key_jt',SU='https://oawhoqfdajpyosecsyls.supabase.co',BK='job-files';
@@ -350,7 +354,10 @@ const TL={CL:'Topics',CV:'Profile / specialisation',APP:'Institution type'};
 const TI={CL:'file-text',CV:'id',APP:'forms',OTHER:'files'};
 const TC={CL:'var(--cl)',CV:'var(--cv)',APP:'var(--app)',OTHER:'var(--other)'};
 const CI={CL:'ci-cl',CV:'ci-cv',APP:'ci-app',OTHER:'ci-other'};
-const STAT=['Wishlist','Applied','Test/Assessment','Interview','Offer','Rejected'];
+const STAT=['Wishlist','Applied','Shortlisted','Offer','Rejected'],STAGES=['Test/Assessment','Interview','Follow-up interview'];
+const BC={Wishlist:'wishlist',Applied:'applied',Shortlisted:'interview',Offer:'offer',Rejected:'rejected'};
+const sbadge=j=>`<span class="badge badge-${BC[j.status]||'wishlist'}" style="cursor:pointer" title="Cambia stato" onclick="statusModal('${j.id}')">${esc(j.status)}${j.stage?' · '+esc(j.stage):''} ▾</span>`;
+let sub='',vacId=null;
 const MIME={pdf:'application/pdf',doc:'application/msword',docx:'application/vnd.openxmlformats-officedocument.wordprocessingml.document',jpg:'image/jpeg',jpeg:'image/jpeg',png:'image/png'};
 const ACC='.pdf,.doc,.docx'+'';
 const esc=s=>String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
@@ -368,12 +375,18 @@ async function login(){const em=$('lg-em').value.trim(),pw=$('lg-pw').value;if(!
 const doc=id=>String(id).startsWith('vac_')?vdoc(String(id).slice(4)):state.docs.find(d=>d.id===id);
 const fmtSel=(id,v)=>`<div class="field"><label>Formato CV</label><select id="${id}"><option value="">Non specificato</option>${['Europass','Altro formato'].map(o=>`<option${v===o?' selected':''}>${o}</option>`).join('')}</select></div>`;
 function vdoc(jid){const j=state.jobs.find(x=>x.id===jid);return j?{id:'vac_'+jid,type:'OTHER',name:j.title+' - '+(j.vacancy?'Vacancy notice':'Descrizione offerta'),category:'',description:'',topics:[],file:j.vacancy||null,content:j.jobDesc||'',linkedJobs:[jid]}:undefined}
-function vacChip(j){return(j.vacancy||j.jobDesc)?`<div class="doc-chips" style="margin-top:8px"><div class="doc-chip" onclick="viewDoc('vac_${j.id}')"><div class="ci ci-other"><i class="ti ti-clipboard-text"></i></div><span class="chip-name">${j.vacancy?'Vacancy notice ('+esc(j.vacancy.name)+')':'Descrizione offerta'}</span></div></div>`:''}
+function vacRow(j){const c=(l,ic)=>`<div class="doc-chip" onclick="viewDoc('vac_${j.id}')"><div class="ci ci-other"><i class="ti ti-${ic}"></i></div><span class="chip-name">${l}</span></div>`;
+return`<div class="job-docs-type-row" style="margin-top:10px"><div class="job-docs-type-label" style="color:var(--other)"><i class="ti ti-clipboard-text"></i>Vacancy</div><div class="doc-chips">${j.vacancy?c('Vacancy notice ('+esc(j.vacancy.name)+')','file-text'):`<button class="btn btn-other" onclick="vacPick('${j.id}')"><i class="ti ti-plus"></i> Vacancy notice</button>`}${j.jobDesc?c('Descrizione offerta','align-left'):`<button class="btn btn-other" onclick="descModal('${j.id}')"><i class="ti ti-plus"></i> Descrizione</button>`}</div></div>`}
+function vacPick(jid){vacId=jid;$('vrep').click()}
+async function vacPicked(i){const f=i.files[0];i.value='';if(!f||!vacId)return;const j=state.jobs.find(x=>x.id===vacId);try{const nf=await up(j.id,f),old=j.vacancy;j.vacancy=nf;save();render();if(old)rm(old.path)}catch(e){alert('Upload non riuscito: '+e.message)}}
+async function rmVac(jid){const j=state.jobs.find(x=>x.id===jid);if(!j.vacancy||!confirm('Rimuovere la vacancy notice?'))return;await rm(j.vacancy.path);j.vacancy=null;save();render();closeModal()}
+function descModal(jid){const j=state.jobs.find(x=>x.id===jid);show(`<div class="modal-bg" onclick="if(event.target===this)closeModal()"><div class="modal"><h2><i class="ti ti-align-left"></i> Descrizione offerta</h2><div class="field"><textarea id="dsc" style="min-height:220px" placeholder="Incolla qui il testo dell'annuncio (es. da LinkedIn)">${esc(j.jobDesc)}</textarea></div><div class="modal-actions"><button class="btn" onclick="closeModal()">Annulla</button><button class="btn primary" onclick="saveDesc('${jid}')">Salva</button></div></div></div>`)}
+function saveDesc(jid){const j=state.jobs.find(x=>x.id===jid);j.jobDesc=$('dsc').value.trim();save();render();closeModal()}
 const uid=()=>'x'+Math.random().toString(36).slice(2,9);
 const today=()=>new Date().toISOString().slice(0,10);
 function days(s){if(!s)return null;const t=new Date();t.setHours(0,0,0,0);return Math.round((new Date(s+'T00:00:00')-t)/864e5)}
 // ---- state ----
-function norm(){state.jobs=state.jobs||[];state.docs=(state.docs||[]).map(d=>{const o=Object.assign({topics:[],description:'',file:null},d,{linkedJobs:d.linkedJobs||(d.linkedJob?[d.linkedJob]:[]),type:['CL','CV','APP','OTHER'].includes(d.type)?d.type:'CL'});delete o.linkedJob;return o})}
+function norm(){state.jobs=(state.jobs||[]).map(j=>(j.status==='Interview'||j.status==='Test/Assessment')?Object.assign({},j,{stage:j.status,status:'Shortlisted'}):j);state.docs=(state.docs||[]).map(d=>{const o=Object.assign({topics:[],description:'',file:null},d,{linkedJobs:d.linkedJobs||(d.linkedJob?[d.linkedJob]:[]),type:['CL','CV','APP','OTHER'].includes(d.type)?d.type:'CL'});delete o.linkedJob;return o})}
 function load(){try{const s=JSON.parse(localStorage.getItem(SK)||'null');if(s)state=Object.assign(state,s)}catch(e){}norm();localStorage.removeItem('gh_token_jt');localStorage.removeItem('supa_key_jt')}
 function persist(){try{localStorage.setItem(SK,JSON.stringify(state))}catch(e){}}
 function save(){state.updatedAt=Date.now();persist();clearTimeout(pt);pt=setTimeout(push,1500)}
@@ -409,7 +422,7 @@ async function viewDoc(id){const d=doc(id);if(!d)return;
 show(`<div class="modal-bg" onclick="if(event.target===this)closeModal()"><div class="modal xl"><h2><i class="ti ti-${TI[d.type]}" style="color:${TC[d.type]}"></i> ${esc(d.name)}</h2>
 <div style="font-size:12px;color:var(--text2);margin-bottom:8px">${d.cvFormat?'<span class="tag tag-8">'+esc(d.cvFormat)+'</span> ':''}${esc(d.category||'')} ${(d.topics||[]).map(t=>'<span class="tag '+tc(t)+'">'+esc(t)+'</span>').join(' ')} ${esc(d.description)}</div>
 <div id="vb" style="max-height:68vh;overflow:auto;border:0.5px solid var(--border);border-radius:var(--radius);padding:.75rem;font-size:13px;line-height:1.6;background:var(--bg2)">Caricamento...</div>
-<div class="modal-actions">${d.file?`<button class="btn" onclick="dl('${d.id}')"><i class="ti ti-download"></i> Scarica</button>`:''}${String(d.id).startsWith('vac_')?`<button class="btn" onclick="closeModal();jobModal('${String(d.id).slice(4)}')"><i class="ti ti-edit"></i> Modifica application</button>`:`<button class="btn" onclick="closeModal();docModal('${d.type}',null,'${d.id}')"><i class="ti ti-edit"></i> Edit</button>`}<button class="btn primary" onclick="closeModal()">Chiudi</button></div></div></div>`);
+<div class="modal-actions">${d.file?`<button class="btn" onclick="dl('${d.id}')"><i class="ti ti-download"></i> Scarica</button>`:''}${String(d.id).startsWith('vac_')?`<button class="btn" onclick="closeModal();vacPick('${String(d.id).slice(4)}')"><i class="ti ti-upload"></i> ${d.file?'Sostituisci file':'Carica vacancy notice'}</button>${d.file?`<button class="btn danger" onclick="rmVac('${String(d.id).slice(4)}')"><i class="ti ti-trash"></i> Rimuovi file</button>`:''}<button class="btn" onclick="closeModal();descModal('${String(d.id).slice(4)}')"><i class="ti ti-align-left"></i> Descrizione</button>`:`<button class="btn" onclick="closeModal();docModal('${d.type}',null,'${d.id}')"><i class="ti ti-edit"></i> Edit</button>`}<button class="btn primary" onclick="closeModal()">Chiudi</button></div></div></div>`);
 const v=$('vb');if(!d.file){v.style.whiteSpace='pre-wrap';v.textContent=d.content||'Nessun file caricato. Usa Edit per caricarlo.';return}
 try{const b=await blob(d),n=d.file.name.toLowerCase();
 if(n.endsWith('.pdf')){const u=URL.createObjectURL(b);urls.push(u);v.style.padding='0';v.innerHTML=`<iframe src="${u}" style="width:100%;height:66vh;border:0"></iframe>`}
@@ -430,24 +443,26 @@ const catIn=(id,v)=>`<input id="${id}" list="cats" value="${esc(v||'')}" placeho
 // ---- render ----
 function render(){stats();bar();renderPipeline();['CL','CV','APP','OTHER'].forEach(lib);jd()}
 function stats(){const j=state.jobs,n=s=>j.filter(x=>x.status===s).length;
-$('stats').innerHTML=[['Applications',j.length],['Active',j.filter(x=>x.status!=='Rejected').length],['Interviews',n('Interview')],['Offers',n('Offer')],['Rejected',n('Rejected')]].map(([l,v])=>`<div class="stat-card"><div class="label">${l}</div><div class="value">${v}</div></div>`).join('')}
-function bar(){$('fbar').innerHTML=[['active','Active'],...STAT.map(s=>[s,s]),['all','All']].map(([k,l])=>`<button class="filter-chip${filt===k?' active':''}" onclick="filt='${k}';bar();renderPipeline()">${l}</button>`).join('')}
+$('stats').innerHTML=[['Applications',j.length],['Active',j.filter(x=>x.status!=='Rejected').length],['Shortlisted',n('Shortlisted')],['Offers',n('Offer')],['Rejected',n('Rejected')]].map(([l,v])=>`<div class="stat-card"><div class="label">${l}</div><div class="value">${v}</div></div>`).join('')}
+function cnt(k){const J=state.jobs;return k==='active'?J.filter(x=>x.status!=='Rejected').length:k==='all'?J.length:J.filter(x=>x.status===k).length}
+function bar(){$('fbar').innerHTML=[['active','Active'],...STAT.map(x=>[x,x]),['all','All']].map(([k,l])=>`<button class="filter-chip${filt===k?' active':''}" onclick="filt='${k}';sub='';bar();renderPipeline()">${l} <small style="opacity:.6">${cnt(k)}</small></button>`).join('');
+$('fbar2').innerHTML=filt==='Shortlisted'?'<span style="font-size:12px;color:var(--text2);align-self:center">Fase:</span>'+[['','Tutte'],...STAGES.map(g=>[g,g])].map(([g,l])=>`<button class="filter-chip${sub===g?' active':''}" onclick="sub='${g}';bar();renderPipeline()">${l} <small style="opacity:.6">${g?state.jobs.filter(x=>x.status==='Shortlisted'&&x.stage===g).length:cnt('Shortlisted')}</small></button>`).join(''):''}
 function rem(j){if(j.status==='Rejected'||j.status==='Wishlist')return'';const n=days(j.followUpDate),sc=days(j.lastContact);
 if(n!==null){if(n<0)return`<div class="rem red"><i class="ti ti-alert-triangle"></i> Follow-up scaduto da ${-n} ${-n==1?'giorno':'giorni'}: invia un sollecito</div>`;
 if(n===0)return'<div class="rem amber"><i class="ti ti-bell-ringing"></i> Follow-up oggi</div>';
 if(n<=3)return`<div class="rem amber"><i class="ti ti-bell"></i> Follow-up tra ${n} ${n==1?'giorno':'giorni'}</div>`;
 return`<div class="rem grey"><i class="ti ti-bell"></i> Follow-up il ${fd_(j.followUpDate)}</div>`}
 if(sc!==null&&-sc>=14&&j.status!=='Offer')return`<div class="rem amber"><i class="ti ti-clock-exclamation"></i> Nessun contatto da ${-sc} giorni: valuta un sollecito</div>`;return''}
-function renderPipeline(){let a=[...state.jobs];if(filt==='active')a=a.filter(j=>j.status!=='Rejected');else if(filt!=='all')a=a.filter(j=>j.status===filt);
+function renderPipeline(){let a=[...state.jobs];if(filt==='active')a=a.filter(j=>j.status!=='Rejected');else if(filt!=='all'){a=a.filter(j=>j.status===filt);if(filt==='Shortlisted'&&sub)a=a.filter(j=>j.stage===sub)}
 const s=$('sort').value;if(s==='alpha')a.sort((x,y)=>x.org.localeCompare(y.org));else if(s==='fu')a.sort((x,y)=>(x.followUpDate||'9999').localeCompare(y.followUpDate||'9999'));else a.sort((x,y)=>(y.date||'').localeCompare(x.date||''));
 $('pipeline-list').innerHTML=a.length?a.map(jobCard).join(''):'<div class="empty-state"><div class="icon"><i class="ti ti-briefcase-off"></i></div><p>Nessuna application in questa vista.</p></div>'}
 function chip(d){return`<div class="doc-chip" title="${esc(d.name)}" onclick="viewDoc('${d.id}')"><div class="ci ${CI[d.type]}"><i class="ti ti-${TI[d.type]}"></i></div><span class="chip-name">${esc(d.name)}${d.category?' ('+esc(d.category)+')':''}</span>${d.file?'':'<small style="color:var(--text3)">no file</small>'}</div>`}
 function jobCard(j){const L=state.docs.filter(d=>d.linkedJobs.includes(j.id));
 const secs=['CL','CV','APP','OTHER'].map(t=>{const x=L.filter(d=>d.type===t);return x.length?`<div class="job-docs-type-row"><div class="job-docs-type-label" style="color:${TC[t]}"><i class="ti ti-${TI[t]}"></i>${t==='OTHER'?'Supporting documents':TN[t]+'s'}</div><div class="doc-chips">${x.map(chip).join('')}</div></div>`:''}).join('');
-return`<div class="card"><div style="display:flex;justify-content:space-between;gap:10px"><div><div class="job-title">${esc(j.title)}</div><div class="job-org">${esc(j.org)}${j.location?' · '+esc(j.location):''}</div></div><span class="badge badge-${({Applied:'applied',Interview:'interview',Offer:'offer',Rejected:'rejected',Wishlist:'wishlist','Test/Assessment':'test'})[j.status]}">${j.status}</span></div>
+return`<div class="card"><div style="display:flex;justify-content:space-between;gap:10px"><div><div class="job-title">${esc(j.title)}</div><div class="job-org">${esc(j.org)}${j.location?' · '+esc(j.location):''}</div></div>${sbadge(j)}</div>
 <div class="job-meta"><span><i class="ti ti-calendar"></i>${fd_(j.date)}</span>${j.deadline?`<span><i class="ti ti-calendar-due"></i>Deadline ${fd_(j.deadline)}</span>`:''}${j.url?`<a href="${esc(j.url)}" target="_blank"><i class="ti ti-external-link"></i>Job post</a>`:''}
 ${j.lastContact?`<span><i class="ti ti-message"></i>Ultimo contatto ${fd_(j.lastContact)}</span>`:''}${j.contactEmail?`<a href="mailto:${esc(j.contactEmail)}"><i class="ti ti-mail"></i>${esc(j.contactEmail)}</a>`:''}</div>
-${rem(j)}${vacChip(j)}${j.notes?`<div style="font-size:12px;color:var(--text2);margin-top:8px;padding:7px 10px;background:var(--bg2);border-radius:var(--radius)">${esc(j.notes)}</div>`:''}
+${rem(j)}${vacRow(j)}${j.notes?`<div style="font-size:12px;color:var(--text2);margin-top:8px;padding:7px 10px;background:var(--bg2);border-radius:var(--radius)">${esc(j.notes)}</div>`:''}
 <div class="job-docs-section">${secs||'<div style="font-size:12px;color:var(--text3);margin-bottom:6px">Nessun documento</div>'}
 <div class="doc-add-row"><button class="btn btn-cl" onclick="docModal('CL','${j.id}')"><i class="ti ti-plus"></i> Cover letter</button><button class="btn btn-cv" onclick="cvPicker('${j.id}')"><i class="ti ti-plus"></i> CV</button><button class="btn btn-app" onclick="docModal('APP','${j.id}')"><i class="ti ti-plus"></i> App form</button><button class="btn btn-other" onclick="docModal('OTHER','${j.id}')"><i class="ti ti-plus"></i> Supporting documents</button></div></div>
 <div class="job-actions"><button class="btn" onclick="jobModal('${j.id}')"><i class="ti ti-edit"></i> Edit</button><button class="btn" style="background:#fcebeb;color:#a32d2d;border-color:#f7c1c1;font-weight:500" onclick="delJob('${j.id}')"><i class="ti ti-trash"></i> Delete</button></div></div>`}
@@ -473,7 +488,7 @@ function addBlk(t){const d=document.createElement('div');d.innerHTML=blk(t);$('b
 function jobModal(id){const j=state.jobs.find(x=>x.id===id)||{title:'',org:'',location:'',status:'Applied',date:today(),deadline:'',url:'',notes:'',lastContact:'',contactEmail:'',followUpDate:''};eid=id||null;
 show(`<div class="modal-bg" onclick="if(event.target===this)closeModal()"><div class="modal xl"><h2><i class="ti ti-briefcase"></i>${id?'Edit':'New'} application</h2>
 <div class="field-row"><div class="field"><label>Job title</label><input id="j-title" value="${esc(j.title)}"></div><div class="field"><label>Organisation</label><input id="j-org" value="${esc(j.org)}"></div></div>
-<div class="field-row"><div class="field"><label>Location</label><input id="j-loc" value="${esc(j.location)}"></div><div class="field"><label>Status</label><select id="j-st">${STAT.map(s=>`<option${s===j.status?' selected':''}>${s}</option>`).join('')}</select></div></div>
+<div class="field-row"><div class="field"><label>Location</label><input id="j-loc" value="${esc(j.location)}"></div><div class="field"><label>Status</label><select id="j-st" onchange="$('j-stg').style.display=this.value==='Shortlisted'?'':'none'">${STAT.map(x=>`<option${x===j.status?' selected':''}>${x}</option>`).join('')}</select><select id="j-stg" style="margin-top:6px;display:${j.status==='Shortlisted'?'':'none'}">${STAGES.map(g=>`<option${g===j.stage?' selected':''}>${g}</option>`).join('')}</select></div></div>
 <div class="field-row"><div class="field"><label>Date applied</label><input type="date" id="j-date" value="${j.date||''}"></div><div class="field"><label>Deadline</label><input type="date" id="j-dl" value="${j.deadline||''}"></div></div>
 <div class="field"><label>Job post URL</label><input id="j-url" value="${esc(j.url)}"></div>
 <div class="field"><label>Vacancy notice (PDF o Word, es. avviso della Commissione europea)${j.vacancy?' - attuale: '+esc(j.vacancy.name):''}</label><input type="file" accept=".pdf,.doc,.docx" onchange="pend.v=this.files[0]">${j.vacancy?'<label style="display:flex;gap:8px;align-items:center;font-size:12px;margin-top:6px"><input type="checkbox" id="j-vrm" style="width:auto"> Rimuovi la vacancy notice attuale</label>':''}</div>
@@ -486,7 +501,7 @@ ${id?'<div class="modal-divider"><i class="ti ti-files"></i> Allegati di questa 
 <div id="blks"></div><div style="display:flex;gap:7px;flex-wrap:wrap"><button class="btn btn-cl" onclick="addBlk('CL')"><i class="ti ti-plus"></i> Cover letter</button><button class="btn btn-cv" onclick="addBlk('CV')"><i class="ti ti-plus"></i> CV</button><button class="btn btn-app" onclick="addBlk('APP')"><i class="ti ti-plus"></i> App form</button><button class="btn btn-other" onclick="addBlk('OTHER')"><i class="ti ti-plus"></i> Supporting documents</button></div>
 <div class="modal-actions"><button class="btn" onclick="closeModal()">Cancel</button><button class="btn primary" id="sv" onclick="saveJob()">Save</button></div></div></div>`);jd()}
 async function saveJob(){const title=$('j-title').value.trim(),org=$('j-org').value.trim();if(!title||!org)return alert('Titolo e organizzazione sono obbligatori');
-const old=state.jobs.find(x=>x.id===eid),j=Object.assign({},old,{id:eid||uid(),title,org,location:$('j-loc').value.trim(),status:$('j-st').value,date:$('j-date').value,deadline:$('j-dl').value,url:$('j-url').value.trim(),notes:$('j-notes').value.trim(),lastContact:$('j-lc').value,followUpDate:$('j-fu').value,contactEmail:$('j-em').value.trim(),jobDesc:$('j-desc').value.trim()});
+const old=state.jobs.find(x=>x.id===eid),j=Object.assign({},old,{id:eid||uid(),title,org,location:$('j-loc').value.trim(),status:$('j-st').value,stage:$('j-st').value==='Shortlisted'?$('j-stg').value:'',date:$('j-date').value,deadline:$('j-dl').value,url:$('j-url').value.trim(),notes:$('j-notes').value.trim(),lastContact:$('j-lc').value,followUpDate:$('j-fu').value,contactEmail:$('j-em').value.trim(),jobDesc:$('j-desc').value.trim()});
 if(old)state.jobs[state.jobs.indexOf(old)]=j;else state.jobs.unshift(j);
 $('sv').disabled=true;$('sv').textContent='Caricamento...';const errs=[];
 if(old&&old.vacancy&&$('j-vrm')&&$('j-vrm').checked){await rm(old.vacancy.path);j.vacancy=null}
@@ -497,6 +512,9 @@ if(f)try{d.file=await up(d.id,f)}catch(e){errs.push(name+': '+e.message)}state.d
 save();closeModal();render();if(errs.length)alert('Documenti creati ma file non caricati (riprova con "Sostituisci file"):\n'+errs.join('\n'))}
 function fpick(i){const f=i.files[0];pend.m=f;const n=$('d-name');if(f&&(!n.value.trim()||(n.dataset.auto&&n.value===n.dataset.orig)))n.value=f.name.replace(/\.[^.]+$/,'')}
 function ren(id){const d=doc(id),n=prompt('Nome del documento',d.name);if(n&&n.trim()){d.name=n.trim();save();render()}}
+function setSt(jid,st,g){const j=state.jobs.find(x=>x.id===jid);j.status=st;j.stage=st==='Shortlisted'?(g||j.stage||''):'';save();render()}
+function statusModal(jid){const j=state.jobs.find(x=>x.id===jid),sh=j.status==='Shortlisted';
+show(`<div class="modal-bg" onclick="if(event.target===this)closeModal()"><div class="modal"><h2>Stato: ${esc(j.org)}</h2><div class="filter-bar">${STAT.map(x=>`<button class="filter-chip${j.status===x?' active':''}" onclick="${x==='Shortlisted'?`setSt('${jid}','Shortlisted');statusModal('${jid}')`:`setSt('${jid}','${x}');closeModal()`}">${x}</button>`).join('')}</div>${sh?`<div style="font-size:12px;color:var(--text2);margin:2px 0 6px">Fase (Shortlisted)</div><div class="filter-bar">${STAGES.map(g=>`<button class="filter-chip${j.stage===g?' active':''}" onclick="setSt('${jid}','Shortlisted','${g}');closeModal()">${g}</button>`).join('')}</div>`:''}<div class="modal-actions"><button class="btn" onclick="closeModal()">Chiudi</button></div></div></div>`)}
 function unlink(id){const d=doc(id);d.linkedJobs=d.linkedJobs.filter(x=>x!==eid);save();render()}
 function jd(){const el=$('jdocs');if(!el)return;const L=state.docs.filter(d=>d.linkedJobs.includes(eid));
 el.innerHTML=L.length?L.map(d=>`<div class="card" style="padding:.6rem .8rem;margin-bottom:6px;display:flex;align-items:center;gap:8px;flex-wrap:wrap"><div class="ci ${CI[d.type]}" style="width:28px;height:28px;border-radius:6px;display:flex;align-items:center;justify-content:center;flex-shrink:0"><i class="ti ti-${TI[d.type]}"></i></div>
