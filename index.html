@@ -321,22 +321,17 @@ html,body{max-width:100%;overflow-x:hidden}
 <div class="sync-bar"><span class="sync-dot ok" id="sd2"></span><span id="sl">Avvio…</span><span style="flex:1"></span>
 <button class="btn" style="font-size:11px;padding:3px 8px" onclick="pull()"><i class="ti ti-refresh"></i> Sync</button>
 <button class="btn" style="font-size:11px;padding:3px 8px" onclick="settings()"><i class="ti ti-settings"></i> Impostazioni</button></div>
-<div class="bottom-tabs">
-<button class="bottom-tab active" data-tab="pipeline" onclick="tab('pipeline')"><i class="ti ti-layout-list"></i>Pipeline</button>
-<button class="bottom-tab" data-tab="CL" onclick="tab('CL')"><i class="ti ti-file-text"></i>CL</button>
-<button class="bottom-tab" data-tab="CV" onclick="tab('CV')"><i class="ti ti-id"></i>CV</button>
-<button class="bottom-tab" data-tab="APP" onclick="tab('APP')"><i class="ti ti-forms"></i>Forms</button>
-<button class="bottom-tab" data-tab="OTHER" onclick="tab('OTHER')"><i class="ti ti-files"></i>Supporting</button></div>
+<div class="bottom-tabs"><button class="bottom-tab active" data-tab="pipeline" onclick="tab('pipeline')"><i class="ti ti-layout-list"></i>Pipeline</button><button class="bottom-tab" data-tab="docs" onclick="tab('docs')"><i class="ti ti-files"></i>Documenti</button></div>
 <div class="app"><div class="scroll-area">
 <div class="top-bar"><h1><i class="ti ti-briefcase"></i> Job tracker</h1><div style="display:flex;gap:8px"><button class="btn primary" onclick="jobModal()"><i class="ti ti-plus"></i> New application</button><button class="btn" onclick="exportData()"><i class="ti ti-download"></i> Export</button><label class="btn" style="cursor:pointer"><i class="ti ti-upload"></i> Import<input type="file" accept=".json" onchange="importData(event)" style="display:none"></label></div></div>
 <div class="stats-row" id="stats"></div>
-<div class="tabs"><button class="tab active" data-tab="pipeline" onclick="tab('pipeline')"><i class="ti ti-layout-list"></i> Pipeline</button><button class="tab" data-tab="CL" onclick="tab('CL')"><i class="ti ti-file-text"></i> Cover letters</button><button class="tab" data-tab="CV" onclick="tab('CV')"><i class="ti ti-id"></i> CVs</button><button class="tab" data-tab="APP" onclick="tab('APP')"><i class="ti ti-forms"></i> App forms</button><button class="tab" data-tab="OTHER" onclick="tab('OTHER')"><i class="ti ti-files"></i> Supporting docs</button></div>
+<div class="tabs"><button class="tab active" data-tab="pipeline" onclick="tab('pipeline')"><i class="ti ti-layout-list"></i> Pipeline</button><button class="tab" data-tab="docs" onclick="tab('docs')"><i class="ti ti-files"></i> Documenti</button></div>
 <div id="tab-pipeline" class="section active">
 <div class="filter-bar" id="fbar"></div>
 <div class="filter-bar" id="fbar2" style="padding-left:12px;margin-left:4px;border-left:2px solid var(--border2)"></div>
 <div class="sort-bar"><label>Sort by</label><select id="sort" onchange="renderPipeline()"><option value="date">Newest first</option><option value="fu">Follow-up date</option><option value="alpha">Company A-Z</option></select></div>
 <div id="pipeline-list"></div></div>
-<div id="tab-CL" class="section"></div><div id="tab-CV" class="section"></div><div id="tab-APP" class="section"></div><div id="tab-OTHER" class="section"></div>
+<div id="tab-docs" class="section"></div>
 </div></div>
 <div id="modal-overlay" style="display:none"></div>
 <input type="file" id="rep" style="display:none" accept=".pdf,.doc,.docx,.jpg,.jpeg,.png" onchange="repPicked(this)">
@@ -357,7 +352,7 @@ const CI={CL:'ci-cl',CV:'ci-cv',APP:'ci-app',OTHER:'ci-other'};
 const STAT=['Wishlist','Applied','Shortlisted','Offer','Rejected'],STAGES=['Test/Assessment','Interview','Follow-up interview'];
 const BC={Wishlist:'wishlist',Applied:'applied',Shortlisted:'interview',Offer:'offer',Rejected:'rejected'};
 const sbadge=j=>`<span class="badge badge-${BC[j.status]||'wishlist'}" style="cursor:pointer" title="Cambia stato" onclick="statusModal('${j.id}')">${esc(j.status)}${j.stage?' · '+esc(j.stage):''} ▾</span>`;
-let sub='',vacId=null;
+let sub='',vacId=null,dirty=false,autoBusy=false;
 const MIME={pdf:'application/pdf',doc:'application/msword',docx:'application/vnd.openxmlformats-officedocument.wordprocessingml.document',jpg:'image/jpeg',jpeg:'image/jpeg',png:'image/png'};
 const ACC='.pdf,.doc,.docx'+'';
 const esc=s=>String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
@@ -373,6 +368,9 @@ async function auth(g,b){const r=await fetch(SU+'/auth/v1/token?grant_type='+g,{
 async function H(x){if(!signedIn())throw new Error('Non connesso: fai il login');if(Date.now()>sess.exp-60000){try{setSess(await auth('refresh_token',{refresh_token:sess.refresh_token}))}catch(e){logout();throw new Error('Sessione scaduta: rifai il login')}}return Object.assign({apikey:AK,Authorization:'Bearer '+sess.access_token},x||{})}
 async function login(){const em=$('lg-em').value.trim(),pw=$('lg-pw').value;if(!em||!pw)return alert('Inserisci email e password');const b=$('lg-btn');b.disabled=true;try{setSess(await auth('password',{email:em,password:pw}));$('lg-pw').value='';$('setup').style.display='none';await pull()}catch(e){alert('Login non riuscito: '+e.message)}b.disabled=false}
 const doc=id=>String(id).startsWith('vac_')?vdoc(String(id).slice(4)):state.docs.find(d=>d.id===id);
+const clJob=d=>`<div class="field"><label>Application (una sola: ogni cover letter è specifica)</label><select id="d-job1"><option value="">Nessuna</option>${state.jobs.map(j=>{const tk=state.docs.some(x=>x.type==='CL'&&x.id!==d.id&&x.linkedJobs.includes(j.id));return`<option value="${j.id}"${d.linkedJobs.includes(j.id)?' selected':''}${tk?' disabled':''}>${esc(j.org)} - ${esc(j.title)}${tk?' (ha già una cover letter)':''}</option>`}).join('')}</select></div>`;
+const multiJob=d=>`<div class="field"><label>Application collegate (anche più di una)</label><div style="max-height:150px;overflow:auto;border:0.5px solid var(--border2);border-radius:var(--radius);padding:6px 10px">${state.jobs.length?state.jobs.map(j=>`<label style="display:flex;gap:8px;align-items:center;font-size:13px;color:var(--text);padding:3px 0;margin:0"><input type="checkbox" class="djl" value="${j.id}" style="width:auto"${d.linkedJobs.includes(j.id)?' checked':''}> ${esc(j.org)} - ${esc(j.title)}</label>`).join(''):'<span style="font-size:12px;color:var(--text3)">Nessuna application</span>'}</div></div>`;
+const linkBlock=js=>js.length?js.map(x=>`<div style="display:flex;gap:6px;align-items:flex-start;font-size:12px;padding:6px 8px;background:var(--bg2);border-radius:var(--radius)"><i class="ti ti-link" style="margin-top:2px"></i><div><div style="font-weight:600">${esc(x.org)}</div><div style="color:var(--text2)">${esc(x.title)} · ${esc(x.status)}${x.stage?' · '+esc(x.stage):''}</div></div></div>`).join(''):'<div style="font-size:12px;padding:6px 8px;border:0.5px dashed #d9b36a;color:#854f0b;border-radius:var(--radius)"><i class="ti ti-unlink"></i> Non collegato a nessuna application</div>';
 const fmtSel=(id,v)=>`<div class="field"><label>Formato CV</label><select id="${id}"><option value="">Non specificato</option>${['Europass','Altro formato'].map(o=>`<option${v===o?' selected':''}>${o}</option>`).join('')}</select></div>`;
 function vdoc(jid){const j=state.jobs.find(x=>x.id===jid);return j?{id:'vac_'+jid,type:'OTHER',name:j.title+' - '+(j.vacancy?'Vacancy notice':'Descrizione offerta'),category:'',description:'',topics:[],file:j.vacancy||null,content:j.jobDesc||'',linkedJobs:[jid]}:undefined}
 function vacRow(j){const c=(l,ic)=>`<div class="doc-chip" onclick="viewDoc('vac_${j.id}')"><div class="ci ci-other"><i class="ti ti-${ic}"></i></div><span class="chip-name">${l}</span></div>`;
@@ -389,10 +387,10 @@ function days(s){if(!s)return null;const t=new Date();t.setHours(0,0,0,0);return
 function norm(){state.jobs=(state.jobs||[]).map(j=>(j.status==='Interview'||j.status==='Test/Assessment')?Object.assign({},j,{stage:j.status,status:'Shortlisted'}):j);state.docs=(state.docs||[]).map(d=>{const o=Object.assign({topics:[],description:'',file:null},d,{linkedJobs:d.linkedJobs||(d.linkedJob?[d.linkedJob]:[]),type:['CL','CV','APP','OTHER'].includes(d.type)?d.type:'CL'});delete o.linkedJob;return o})}
 function load(){try{const s=JSON.parse(localStorage.getItem(SK)||'null');if(s)state=Object.assign(state,s)}catch(e){}norm();localStorage.removeItem('gh_token_jt');localStorage.removeItem('supa_key_jt')}
 function persist(){try{localStorage.setItem(SK,JSON.stringify(state))}catch(e){}}
-function save(){state.updatedAt=Date.now();persist();clearTimeout(pt);pt=setTimeout(push,1500)}
+function save(){state.updatedAt=Date.now();dirty=true;persist();clearTimeout(pt);pt=setTimeout(push,1500)}
 // ---- sync (Supabase) ----
 function ss(c,m){['sd1','sd2'].forEach(i=>{if($(i))$(i).className='sync-dot '+c});$('sl').textContent=m}
-async function pull(){if(!signedIn())return ss('err','Non connesso: fai il login');ss('syncing','Sincronizzazione...');
+async function pull(q){if(!signedIn())return ss('err','Non connesso: fai il login');if(!q)ss('syncing','Sincronizzazione...');
 try{const r=await fetch(SU+'/rest/v1/app_state?id=eq.main&select=data',{headers:await H()});
 if(r.status==401||r.status==403)return ss('err','Accesso negato: esci e rifai il login');
 if(r.status==404)return ss('err','Tabella app_state mancante: esegui lo SQL');
@@ -401,9 +399,9 @@ const rows=await r.json(),rd=rows[0]&&rows[0].data;
 if(!rd||(rd.updatedAt||0)<state.updatedAt){await push();return}
 if(rd.updatedAt>state.updatedAt){state.jobs=rd.jobs||[];state.docs=rd.docs||[];state.updatedAt=rd.updatedAt;norm();persist();render()}
 ss('ok','Sincronizzato '+new Date().toLocaleTimeString())}catch(e){ss('err','Errore: '+e.message)}}
-async function push(){if(!signedIn())return;ss('syncing','Salvataggio...');
+async function push(){if(!signedIn())return;const at=state.updatedAt;ss('syncing','Salvataggio...');
 try{const r=await fetch(SU+'/rest/v1/app_state?on_conflict=id',{method:'POST',headers:await H({'Content-Type':'application/json',Prefer:'resolution=merge-duplicates,return=minimal'}),body:JSON.stringify({id:'main',data:state})});
-if(!r.ok)throw new Error('HTTP '+r.status);ss('ok','Salvato '+new Date().toLocaleTimeString())}catch(e){ss('err','Errore: '+e.message)}}
+if(!r.ok)throw new Error('HTTP '+r.status);if(state.updatedAt===at)dirty=false;ss('ok','Salvato '+new Date().toLocaleTimeString())}catch(e){ss('err','Errore: '+e.message)}}
 function settings(){show(`<div class="modal-bg" onclick="if(event.target===this)closeModal()"><div class="modal"><h2><i class="ti ti-settings"></i> Account e sync</h2><p style="font-size:13px;color:var(--text2);margin-bottom:1rem">${signedIn()?'Connesso come <b>'+esc(sess.email)+'</b>':'Non connesso'}</p><div class="modal-actions"><button class="btn" onclick="closeModal()">Chiudi</button>${signedIn()?'<button class="btn danger" onclick="logout()">Esci</button>':''}</div></div></div>`)}
 // ---- files (Supabase Storage) ----
 async function up(id,f){if(f.size>25*1048576)throw new Error('File oltre 25 MB');
@@ -422,7 +420,7 @@ async function viewDoc(id){const d=doc(id);if(!d)return;
 show(`<div class="modal-bg" onclick="if(event.target===this)closeModal()"><div class="modal xl"><h2><i class="ti ti-${TI[d.type]}" style="color:${TC[d.type]}"></i> ${esc(d.name)}</h2>
 <div style="font-size:12px;color:var(--text2);margin-bottom:8px">${d.cvFormat?'<span class="tag tag-8">'+esc(d.cvFormat)+'</span> ':''}${esc(d.category||'')} ${(d.topics||[]).map(t=>'<span class="tag '+tc(t)+'">'+esc(t)+'</span>').join(' ')} ${esc(d.description)}</div>
 <div id="vb" style="max-height:68vh;overflow:auto;border:0.5px solid var(--border);border-radius:var(--radius);padding:.75rem;font-size:13px;line-height:1.6;background:var(--bg2)">Caricamento...</div>
-<div class="modal-actions">${d.file?`<button class="btn" onclick="dl('${d.id}')"><i class="ti ti-download"></i> Scarica</button>`:''}${String(d.id).startsWith('vac_')?`<button class="btn" onclick="closeModal();vacPick('${String(d.id).slice(4)}')"><i class="ti ti-upload"></i> ${d.file?'Sostituisci file':'Carica vacancy notice'}</button>${d.file?`<button class="btn danger" onclick="rmVac('${String(d.id).slice(4)}')"><i class="ti ti-trash"></i> Rimuovi file</button>`:''}<button class="btn" onclick="closeModal();descModal('${String(d.id).slice(4)}')"><i class="ti ti-align-left"></i> Descrizione</button>`:`<button class="btn" onclick="closeModal();docModal('${d.type}',null,'${d.id}')"><i class="ti ti-edit"></i> Edit</button>`}<button class="btn primary" onclick="closeModal()">Chiudi</button></div></div></div>`);
+<div class="modal-actions">${d.file?`<button class="btn" onclick="dl('${d.id}')"><i class="ti ti-download"></i> Scarica</button>`:''}${String(d.id).startsWith('vac_')?`<button class="btn" onclick="closeModal();vacPick('${String(d.id).slice(4)}')"><i class="ti ti-upload"></i> ${d.file?'Sostituisci file':'Carica vacancy notice'}</button>${d.file?`<button class="btn danger" onclick="rmVac('${String(d.id).slice(4)}')"><i class="ti ti-trash"></i> Rimuovi file</button>`:''}<button class="btn" onclick="closeModal();descModal('${String(d.id).slice(4)}')"><i class="ti ti-align-left"></i> Descrizione</button>`:`<button class="btn" onclick="closeModal();docModal('${d.type}',null,'${d.id}')"><i class="ti ti-edit"></i> Edit</button>`}${String(d.id).startsWith('vac_')?'':`<button class="btn danger" onclick="delDoc('${d.id}').then(()=>{if(!doc('${d.id}'))closeModal()})"><i class="ti ti-trash"></i> Cancella</button>`}<button class="btn primary" onclick="closeModal()">Chiudi</button></div></div></div>`);
 const v=$('vb');if(!d.file){v.style.whiteSpace='pre-wrap';v.textContent=d.content||'Nessun file caricato. Usa Edit per caricarlo.';return}
 try{const b=await blob(d),n=d.file.name.toLowerCase();
 if(n.endsWith('.pdf')){const u=URL.createObjectURL(b);urls.push(u);v.style.padding='0';v.innerHTML=`<iframe src="${u}" style="width:100%;height:66vh;border:0"></iframe>`}
@@ -439,9 +437,9 @@ b.innerHTML=m.map(t=>`<div class="topic-sug-item" data-t="${esc(t)}" onmousedown
 function tpick(k,t){if(!tops[k].includes(t))tops[k].push(t);$('ti-'+k).value='';$('ts-'+k).classList.remove('open');$('tc-'+k).innerHTML=tchips(k)}
 function tadd(k){const i=$('ti-'+k);if(!i)return;const v=i.value.trim().replace(/,$/,'');if(v&&!tops[k].includes(v))tops[k].push(v);i.value='';$('ts-'+k).classList.remove('open');$('tc-'+k).innerHTML=tchips(k)}
 function trem(k,t){tops[k]=tops[k].filter(x=>x!==t);$('tc-'+k).innerHTML=tchips(k)}
-const catIn=(id,v)=>`<input id="${id}" list="cats" value="${esc(v||'')}" placeholder="Work contract, ID doc, Payslip... (testo libero)"><datalist id="cats">${CATS.map(c=>`<option value="${c}">`).join('')}</datalist>`;
+const catIn=(id,v)=>{const o=[...CATS];if(v&&!o.includes(v))o.push(v);return`<select id="${id}"><option value="">Seleziona tipo</option>${o.map(c=>`<option${c===v?' selected':''}>${esc(c)}</option>`).join('')}</select>`};
 // ---- render ----
-function render(){stats();bar();renderPipeline();['CL','CV','APP','OTHER'].forEach(lib);jd()}
+function render(){stats();bar();renderPipeline();lib();jd()}
 function stats(){const j=state.jobs,n=s=>j.filter(x=>x.status===s).length;
 $('stats').innerHTML=[['Applications',j.length],['Active',j.filter(x=>x.status!=='Rejected').length],['Shortlisted',n('Shortlisted')],['Offers',n('Offer')],['Rejected',n('Rejected')]].map(([l,v])=>`<div class="stat-card"><div class="label">${l}</div><div class="value">${v}</div></div>`).join('')}
 function cnt(k){const J=state.jobs;return k==='active'?J.filter(x=>x.status!=='Rejected').length:k==='all'?J.length:J.filter(x=>x.status===k).length}
@@ -464,17 +462,18 @@ return`<div class="card"><div style="display:flex;justify-content:space-between;
 ${j.lastContact?`<span><i class="ti ti-message"></i>Ultimo contatto ${fd_(j.lastContact)}</span>`:''}${j.contactEmail?`<a href="mailto:${esc(j.contactEmail)}"><i class="ti ti-mail"></i>${esc(j.contactEmail)}</a>`:''}</div>
 ${rem(j)}${vacRow(j)}${j.notes?`<div style="font-size:12px;color:var(--text2);margin-top:8px;padding:7px 10px;background:var(--bg2);border-radius:var(--radius)">${esc(j.notes)}</div>`:''}
 <div class="job-docs-section">${secs||'<div style="font-size:12px;color:var(--text3);margin-bottom:6px">Nessun documento</div>'}
-<div class="doc-add-row"><button class="btn btn-cl" onclick="docModal('CL','${j.id}')"><i class="ti ti-plus"></i> Cover letter</button><button class="btn btn-cv" onclick="cvPicker('${j.id}')"><i class="ti ti-plus"></i> CV</button><button class="btn btn-app" onclick="docModal('APP','${j.id}')"><i class="ti ti-plus"></i> App form</button><button class="btn btn-other" onclick="docModal('OTHER','${j.id}')"><i class="ti ti-plus"></i> Supporting documents</button></div></div>
+<div class="doc-add-row">${L.some(d=>d.type==='CL')?'':`<button class="btn btn-cl" onclick="docModal('CL','${j.id}')"><i class="ti ti-plus"></i> Cover letter</button>`}<button class="btn btn-cv" onclick="cvPicker('${j.id}')"><i class="ti ti-plus"></i> CV</button><button class="btn btn-app" onclick="docModal('APP','${j.id}')"><i class="ti ti-plus"></i> App form</button><button class="btn btn-other" onclick="docModal('OTHER','${j.id}')"><i class="ti ti-plus"></i> Supporting documents</button></div></div>
 <div class="job-actions"><button class="btn" onclick="jobModal('${j.id}')"><i class="ti ti-edit"></i> Edit</button><button class="btn" style="background:#fcebeb;color:#a32d2d;border-color:#f7c1c1;font-weight:500" onclick="delJob('${j.id}')"><i class="ti ti-trash"></i> Delete</button></div></div>`}
-function lib(t){const el=$('tab-'+t),L=state.docs.filter(d=>d.type===t),f=$('flt-'+t)?$('flt-'+t).value:'';
-const keys=d=>t==='OTHER'?[d.category||'Other']:t==='APP'?['']:(d.topics&&d.topics.length?d.topics:['(nessuno)']);
+const CATN={CL:'Cover letters',CV:'CVs',APP:'Application forms',OTHER:'Supporting documents'};let dcat='CL';
+function lib(t){if(typeof t==='string')dcat=t;t=dcat;const el=$('tab-docs'),L=state.docs.filter(d=>d.type===t),fe=$('flt'),f=fe&&fe.dataset.t===t?fe.value:'';
+const keys=d=>t==='OTHER'?[d.category||'Altro']:t==='APP'?['']:(d.topics&&d.topics.length?d.topics:['(nessuno)']);
 const all=[...new Set(L.flatMap(keys))].filter(Boolean).sort();
-const sel=(t==='CL'||t==='CV')?`<select id="flt-${t}" onchange="lib('${t}')"><option value="">Tutti</option>${all.map(k=>`<option${k===f?' selected':''}>${esc(k)}</option>`).join('')}</select>`:'';
+const sel=(t==='CL'||t==='CV'||t==='OTHER')?`<select id="flt" data-t="${t}" onchange="lib()"><option value="">${t==='OTHER'?'Tutti i tipi':t==='CV'?'Tutti i profili':'Tutti i topic'}</option>${all.map(k=>`<option${k===f?' selected':''}>${esc(k)}</option>`).join('')}</select>`:'';
 const G={};L.forEach(d=>keys(d).forEach(k=>{if(!f||k===f)(G[k]=G[k]||[]).push(d)}));
-el.innerHTML=`<div class="lib-header"><div class="lib-title" style="color:${TC[t]}"><i class="ti ti-${TI[t]}"></i> ${t==='OTHER'?'Supporting documents':TN[t]+'s'}</div><div class="lib-controls">${sel}<button class="btn" onclick="docModal('${t}')"><i class="ti ti-plus"></i> New</button></div></div>`+
-(L.length?Object.keys(G).sort().map(k=>`<div class="topic-group">${k?`<div class="topic-group-title">${esc(k)} <span class="count">${G[k].length}</span></div>`:''}<div class="lib-grid">${G[k].map(card).join('')}</div></div>`).join(''):'<div class="empty-state"><p>Ancora nessun documento.</p></div>')}
+el.innerHTML=`<div class="lib-header"><div class="lib-controls"><select id="dcat" onchange="lib(this.value)">${Object.keys(CATN).map(k=>`<option value="${k}"${k===t?' selected':''}>${CATN[k]}</option>`).join('')}</select>${sel}</div><button class="btn" onclick="docModal('${t}')"><i class="ti ti-plus"></i> Nuovo</button></div>`+
+(L.length?Object.keys(G).sort().map(k=>`<div class="topic-group">${k?`<div class="topic-group-title">${esc(k)} <span class="count">${G[k].length}</span></div>`:''}<div class="lib-grid">${G[k].map(card).join('')}</div></div>`).join(''):'<div class="empty-state"><p>Ancora nessun documento in questa categoria.</p></div>')}
 function card(d){const js=state.jobs.filter(x=>d.linkedJobs.includes(x.id));return`<div class="lib-card"><div class="lib-card-header"><div class="lib-card-icon ${d.type.toLowerCase()}"><i class="ti ti-${TI[d.type]}"></i></div><div style="flex:1;min-width:0"><div class="lib-card-name">${esc(d.name)}</div><div class="lib-card-sub">${d.file?esc(d.file.name)+' · '+fsz(d.file.size):'nessun file'}</div></div></div>
-${((d.topics||[]).length||d.cvFormat)?`<div class="lib-card-tags">${d.cvFormat?`<span class="tag tag-8">${esc(d.cvFormat)}</span>`:''}${(d.topics||[]).map(t=>`<span class="tag ${tc(t)}">${esc(t)}</span>`).join('')}</div>`:''}${d.description?`<div class="lib-card-desc">${esc(d.description)}</div>`:''}${js.length?`<div class="lib-card-linked"><i class="ti ti-link"></i>${js.map(x=>esc(x.org)).join(', ')}</div>`:''}
+${linkBlock(js)}${((d.topics||[]).length||d.cvFormat)?`<div class="lib-card-tags">${d.cvFormat?`<span class="tag tag-8">${esc(d.cvFormat)}</span>`:''}${(d.topics||[]).map(t=>`<span class="tag ${tc(t)}">${esc(t)}</span>`).join('')}</div>`:''}${d.description?`<div class="lib-card-desc">${esc(d.description)}</div>`:''}
 <div class="lib-card-footer"><button class="btn" onclick="viewDoc('${d.id}')"><i class="ti ti-eye"></i> View</button>${d.file?`<button class="btn" onclick="dl('${d.id}')"><i class="ti ti-download"></i> Download</button>`:''}<button class="btn" onclick="docModal('${d.type}',null,'${d.id}')"><i class="ti ti-edit"></i> Edit</button><button class="btn danger" onclick="delDoc('${d.id}')"><i class="ti ti-trash"></i> Delete</button></div></div>`}
 function tab(t){document.querySelectorAll('.tab,.bottom-tab').forEach(b=>b.classList.toggle('active',b.dataset.tab===t));document.querySelectorAll('.section').forEach(s=>s.classList.toggle('active',s.id==='tab-'+t))}
 // ---- modals ----
@@ -484,7 +483,7 @@ function blk(t){const b='b'+(++bc);return`<div class="doc-block" data-b="${b}" d
 <div><div class="field"><label>Nome (se vuoto, usa il nome del file)</label><input id="bn-${b}"></div></div>
 ${t==='OTHER'?`<div class="field"><label>Tipo di documento</label>${catIn('bc-'+b)}</div>`:`<div class="field"><label>${TL[t]}</label>${tp(b,t)}</div>`}
 ${t==='CV'?fmtSel('bfm-'+b,''):''}<div class="field"><label>File (.pdf, .doc, .docx)</label><input type="file" id="bf-${b}" accept="${t==='OTHER'?ACC+',.jpg,.jpeg,.png':ACC}" onchange="pend['${b}']=this.files[0]"></div></div></div>`}
-function addBlk(t){const d=document.createElement('div');d.innerHTML=blk(t);$('blks').appendChild(d.firstElementChild)}
+function addBlk(t){if(t==='CL'&&(document.querySelector('.doc-block[data-t="CL"]')||state.docs.some(d=>d.type==='CL'&&d.linkedJobs.includes(eid))))return alert('Ogni application ha una sola cover letter.');const d=document.createElement('div');d.innerHTML=blk(t);$('blks').appendChild(d.firstElementChild)}
 function jobModal(id){const j=state.jobs.find(x=>x.id===id)||{title:'',org:'',location:'',status:'Applied',date:today(),deadline:'',url:'',notes:'',lastContact:'',contactEmail:'',followUpDate:''};eid=id||null;
 show(`<div class="modal-bg" onclick="if(event.target===this)closeModal()"><div class="modal xl"><h2><i class="ti ti-briefcase"></i>${id?'Edit':'New'} application</h2>
 <div class="field-row"><div class="field"><label>Job title</label><input id="j-title" value="${esc(j.title)}"></div><div class="field"><label>Organisation</label><input id="j-org" value="${esc(j.org)}"></div></div>
@@ -515,6 +514,10 @@ function ren(id){const d=doc(id),n=prompt('Nome del documento',d.name);if(n&&n.t
 function setSt(jid,st,g){const j=state.jobs.find(x=>x.id===jid);j.status=st;j.stage=st==='Shortlisted'?(g||j.stage||''):'';save();render()}
 function statusModal(jid){const j=state.jobs.find(x=>x.id===jid),sh=j.status==='Shortlisted';
 show(`<div class="modal-bg" onclick="if(event.target===this)closeModal()"><div class="modal"><h2>Stato: ${esc(j.org)}</h2><div class="filter-bar">${STAT.map(x=>`<button class="filter-chip${j.status===x?' active':''}" onclick="${x==='Shortlisted'?`setSt('${jid}','Shortlisted');statusModal('${jid}')`:`setSt('${jid}','${x}');closeModal()`}">${x}</button>`).join('')}</div>${sh?`<div style="font-size:12px;color:var(--text2);margin:2px 0 6px">Fase (Shortlisted)</div><div class="filter-bar">${STAGES.map(g=>`<button class="filter-chip${j.stage===g?' active':''}" onclick="setSt('${jid}','Shortlisted','${g}');closeModal()">${g}</button>`).join('')}</div>`:''}<div class="modal-actions"><button class="btn" onclick="closeModal()">Chiudi</button></div></div></div>`)}
+const modalOpen=()=>$('modal-overlay').style.display==='block';
+async function auto(){if(document.hidden||!signedIn()||dirty||autoBusy||modalOpen())return;autoBusy=true;
+try{const r=await fetch(SU+'/rest/v1/app_state?id=eq.main&select=ts:data->>updatedAt',{headers:await H()});
+if(!r.ok)await pull(true);else{const rows=await r.json(),ts=rows[0]?Number(rows[0].ts):0;if(!rows[0]||ts<state.updatedAt)await push();else if(isNaN(ts)||ts>state.updatedAt)await pull(true)}}catch(e){}autoBusy=false}
 function unlink(id){const d=doc(id);d.linkedJobs=d.linkedJobs.filter(x=>x!==eid);save();render()}
 function jd(){const el=$('jdocs');if(!el)return;const L=state.docs.filter(d=>d.linkedJobs.includes(eid));
 el.innerHTML=L.length?L.map(d=>`<div class="card" style="padding:.6rem .8rem;margin-bottom:6px;display:flex;align-items:center;gap:8px;flex-wrap:wrap"><div class="ci ${CI[d.type]}" style="width:28px;height:28px;border-radius:6px;display:flex;align-items:center;justify-content:center;flex-shrink:0"><i class="ti ti-${TI[d.type]}"></i></div>
@@ -528,11 +531,11 @@ show(`<div class="modal-bg" onclick="if(event.target===this)closeModal()"><div c
 <div class="field"><label>Nome (se vuoto, usa il nome del file)</label><input id="d-name" value="${esc(d.name)}" data-orig="${esc(d.name)}"${(!d.name||(d.file&&d.name===d.file.name.replace(/\.[^.]+$/,'')))?' data-auto="1"':''}></div>
 <div class="field"><label>Descrizione (opzionale)</label><input id="d-desc" value="${esc(d.description)}"></div>
 ${t==='OTHER'?`<div class="field"><label>Tipo di documento</label>${catIn('d-cat',d.category)}</div>`:`<div class="field"><label>${TL[t]}</label>${tp('m',t,d.topics)}</div>`}
-${t==='CV'?fmtSel('d-fmt',d.cvFormat):''}<div class="field"><label>Application collegate (anche più di una)</label><div style="max-height:150px;overflow:auto;border:0.5px solid var(--border2);border-radius:var(--radius);padding:6px 10px">${state.jobs.length?state.jobs.map(j=>`<label style="display:flex;gap:8px;align-items:center;font-size:13px;color:var(--text);padding:3px 0;margin:0"><input type="checkbox" class="djl" value="${j.id}" style="width:auto"${d.linkedJobs.includes(j.id)?' checked':''}> ${esc(j.org)} - ${esc(j.title)}</label>`).join(''):'<span style="font-size:12px;color:var(--text3)">Nessuna application</span>'}</div></div>
+${t==='CV'?fmtSel('d-fmt',d.cvFormat):''}${t==='CL'?clJob(d):multiJob(d)}
 <div class="field"><label>File (.pdf, .doc, .docx${t==='OTHER'?', .jpg, .png':''})${d.file?' - attuale: '+esc(d.file.name)+', scegline uno per sostituirlo':''}</label><input type="file" accept="${t==='OTHER'?ACC+',.jpg,.jpeg,.png':ACC}" onchange="fpick(this)"></div>
 <div class="modal-actions"><button class="btn" onclick="closeModal()">Cancel</button><button class="btn primary" id="sv" onclick="saveDoc('${t}')">Save</button></div></div></div>`)}
 async function saveDoc(t){if(t!=='OTHER')tadd('m');const f=pend.m,name=$('d-name').value.trim()||(f&&f.name.replace(/\.[^.]+$/,''));if(!name)return alert('Inserisci un nome o scegli un file');
-const old=doc(eid),d=Object.assign({},old,{id:eid||uid(),type:t,name,description:$('d-desc').value.trim(),linkedJobs:[...document.querySelectorAll('.djl:checked')].map(x=>x.value),topics:t==='OTHER'?[]:[...tops.m],file:old?old.file:null,date:old?old.date:today()});
+const old=doc(eid),d=Object.assign({},old,{id:eid||uid(),type:t,name,description:$('d-desc').value.trim(),linkedJobs:t==='CL'?($('d-job1').value?[$('d-job1').value]:[]):[...document.querySelectorAll('.djl:checked')].map(x=>x.value),topics:t==='OTHER'?[]:[...tops.m],file:old?old.file:null,date:old?old.date:today()});
 if(t==='OTHER')d.category=$('d-cat').value.trim();if(t==='CV')d.cvFormat=$('d-fmt').value;
 $('sv').disabled=true;$('sv').textContent='Caricamento...';
 if(f)try{const nf=await up(d.id,f),prev=d.file;d.file=nf;if(prev)rm(prev.path)}catch(e){$('sv').disabled=false;$('sv').textContent='Save';return alert('Upload non riuscito: '+e.message)}
@@ -546,6 +549,6 @@ async function delJob(id){if(!confirm('Eliminare questa application? I documenti
 function exportData(){const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([JSON.stringify(state,null,2)],{type:'application/json'}));a.download='job-tracker-metadata.json';a.click()}
 function importData(e){const f=e.target.files[0];if(!f)return;const r=new FileReader();r.onload=x=>{try{const p=JSON.parse(x.target.result);state.jobs=p.jobs||[];state.docs=p.docs||[];norm();save();render()}catch(err){alert('File non valido')}};r.readAsText(f)}
 load();render();if(signedIn())pull();else{ss('err','Non connesso');$('setup').style.display='flex'}
-document.addEventListener('visibilitychange',()=>{if(!document.hidden&&signedIn()&&!pt)pull()});
+document.addEventListener('visibilitychange',auto);addEventListener('focus',auto);addEventListener('online',auto);setInterval(auto,10000);
 if('serviceWorker' in navigator)window.addEventListener('load',()=>navigator.serviceWorker.register('./sw.js').catch(()=>{}));
 </script></body></html>
